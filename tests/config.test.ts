@@ -229,6 +229,22 @@ describe("resolveConfig", () => {
     ).toContain("cards.topLangs.percentSeparator");
   });
 
+  it("rejects control characters in separator and titles", () => {
+    function rejected(cards: Record<string, unknown>): string {
+      return captureError(() => resolveConfig({ ...minimal, cards }, {}))
+        .message;
+    }
+    expect(rejected({ topLangs: { percentSeparator: "\n" } })).toContain(
+      "cards.topLangs.percentSeparator",
+    );
+    expect(rejected({ topLangs: { title: "Langs\u0007" } })).toContain(
+      "cards.topLangs.title",
+    );
+    expect(rejected({ stats: { title: "Stats\t" } })).toContain(
+      "cards.stats.title",
+    );
+  });
+
   it("merges env lists, de-duplicated case-insensitively", () => {
     const config = resolveConfig(
       {

@@ -11,6 +11,9 @@ const hexColor = z
   );
 
 const width = z.number().int().min(300).max(600);
+const plainText = z
+  .string()
+  .regex(/^[^\p{Cc}]*$/u, "must not contain control characters");
 const minHeight = z.number().int().min(150).max(400).optional();
 
 export const LoginSchema = z
@@ -40,7 +43,7 @@ export const StatsCardOptionsSchema = z
       .array(z.enum(["stars", "commits", "prs", "issues", "contributedTo"]))
       .default([]),
     hideRank: z.boolean().default(false),
-    title: z.string().optional(),
+    title: plainText.optional(),
   })
   .refine(
     (options) => options.hideRank || options.width >= STATS_MIN_WIDTH_WITH_RANK,
@@ -56,13 +59,12 @@ export const TopLangsCardOptionsSchema = z.object({
   height: minHeight,
   textSize: z.number().int().min(10).max(16).default(11),
   percentGap: z.number().int().min(0).max(40).default(0),
-  percentSeparator: z
-    .string()
+  percentSeparator: plainText
     .refine((value) => [...value].length <= 3, "must be at most 3 characters")
     .default(""),
   count: z.number().int().min(1).max(20).default(8),
   hide: z.array(z.string()).default([]),
-  title: z.string().optional(),
+  title: plainText.optional(),
 });
 
 export const ConfigSchema = z.object({

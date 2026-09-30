@@ -318,7 +318,7 @@ describe("renderTopLangsCard", () => {
       ],
       { cards: { topLangs: { percentGap: 12, percentSeparator: "•" } } },
     );
-    expect(svg).toContain('class="lang-name">Microsoft … <tspan');
+    expect(svg).toContain('class="lang-name">Microsoft… <tspan');
     expect(svg).toContain('class="lang-name">Micro… <tspan');
   });
 });
