@@ -146,7 +146,7 @@ Add this to your profile README and replace `{username}` and `{gistId}`:
 </picture>
 ```
 
-Each card takes 49% of the row. Give both cards the same `width` and `height` in the config so they line up, for example `width: 437` and `height: 195` on `cards.topLangs` to match the default stats card.
+Each card takes 49% of the row. Give both cards the same `width` and `height` in the config so they line up, for example `width: 437` and `height: 195` on `cards.topLangs` to match the default stats card. A height of 195 fits up to 8 languages. With a higher `count` the top languages card grows taller, so set `cards.stats.height` to the same height.
 
 The URL pattern for any file is `https://gist.githubusercontent.com/{username}/{gistId}/raw/{file}`. Leaving out the revision in the URL always serves the latest version.
 
