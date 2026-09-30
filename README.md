@@ -1,6 +1,6 @@
 # simple-github-readme-stats
 
-A GitHub Actions workflow that renders your GitHub stats and top languages as SVG cards and uploads them to a Gist every hour. Your profile README loads the images straight from the Gist, so no server is needed.
+A GitHub Actions workflow that renders your GitHub stats and top languages as SVG cards and uploads them to a Gist every three hours. Your profile README loads the images straight from the Gist, so no server is needed.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://gist.githubusercontent.com/kboshold/ab2d9bf8ae29c3f61f892b67fb3282a2/raw/stats-dark.svg">
@@ -15,7 +15,7 @@ The cards follow the look of [github-readme-stats](https://github.com/anuraghazr
 
 ## How it works
 
-The workflow `.github/workflows/update.yml` runs at minute 17 of every hour, and you can also start it by hand. It runs three steps:
+The workflow `.github/workflows/update.yml` runs every three hours at minute 42 (00:42, 03:42, ..., 21:42 UTC), and you can also start it by hand. It runs three steps:
 
 1. `pnpm data:fetch` asks the GitHub GraphQL API for your totals and languages and writes them to `.cache/data.json`.
 2. `pnpm svg:render` turns that file into one SVG per card and theme in `dist/`: `stats-dark.svg`, `stats-light.svg`, `top-langs-dark.svg` and `top-langs-light.svg`.
@@ -186,7 +186,7 @@ Other commands:
 ## Limits
 
 - The commit total is an estimate. GitHub doesn't report private commits on their own; they are mixed with private pull requests, issues and reviews. The tool subtracts what it can identify, so the result depends on what the token can see. A classic token with organization access sees more private commits directly and gets closer to the real number.
-- Cards can be up to about one hour old, plus up to 5 minutes of caching on the Gist raw host. GitHub may also start scheduled runs several minutes late.
+- Cards can be up to about three hours old, plus up to 5 minutes of caching on the Gist raw host. GitHub may also start scheduled runs several minutes late.
 - Every repository of an organization in `orgs` or `STATS_ORGS` that your token can read counts for stars and languages, even ones you never touched. Forks are left out of languages but count for stars. Use `excludeRepos` to drop repositories.
 - When the token expires, runs fail with `error[TOKEN_UNAUTHORIZED]` and the cards stop updating. Create a new token and update `STATS_TOKEN`.
 - Text width is not measured exactly. Very long display names or language names can overflow the card.

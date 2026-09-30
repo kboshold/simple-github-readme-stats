@@ -7,16 +7,11 @@ import type {
 import { resolve, sep } from "node:path";
 import type { Plugin, ViteDevServer } from "vite";
 import { z } from "zod";
-import { requireToken } from "../cli/env.ts";
+import type * as EnvModule from "../cli/env.ts";
 import type * as ConfigModule from "../config/load.ts";
-import { StatsError, type StatsErrorCode } from "../errors.ts";
+import type { StatsErrorCode } from "../errors.ts";
 import type * as FetchModule from "../fetch/index.ts";
-import {
-  readSnapshot,
-  SNAPSHOT_PATH,
-  type Snapshot,
-  writeSnapshot,
-} from "../fetch/snapshot.ts";
+import type * as SnapshotModule from "../fetch/snapshot.ts";
 import type * as RenderModule from "../render/index.ts";
 
 export const FIXTURE_PATH = "fixtures/data.json";
@@ -34,12 +29,20 @@ const ConfigModuleSchema = z.object({
 const FetchModuleSchema = z.object({
   fetchSnapshot: exportedFunction<typeof FetchModule.fetchSnapshot>(),
 });
+const SnapshotModuleSchema = z.object({
+  SNAPSHOT_PATH: z.string(),
+  readSnapshot: exportedFunction<typeof SnapshotModule.readSnapshot>(),
+  writeSnapshot: exportedFunction<typeof SnapshotModule.writeSnapshot>(),
+});
+const EnvModuleSchema = z.object({
+  requireToken: exportedFunction<typeof EnvModule.requireToken>(),
+});
 
 export type SnapshotSource = "cache" | "fixture";
 
 export interface ResolvedSnapshot {
   source: SnapshotSource;
-  snapshot: Snapshot;
+  snapshot: SnapshotModule.Snapshot;
 }
 
 export interface StatusResponse {
@@ -59,26 +62,27 @@ export interface ErrorResponse {
   };
 }
 
-export async function resolveSnapshot(
-  cachePath: string,
-  fixturePath: string,
-): Promise<ResolvedSnapshot> {
-  try {
-    return { source: "cache", snapshot: await readSnapshot(cachePath) };
-  } catch (error) {
-    if (!(error instanceof StatsError)) {
-      throw error;
-    }
-  }
-  return { source: "fixture", snapshot: await readSnapshot(fixturePath) };
-}
-
 // ssrLoadModule yields its own StatsError class, so instanceof does not match
 const CodedErrorSchema = z.object({
   name: z.literal("StatsError"),
   code: z.string(),
   message: z.string(),
 });
+
+export async function resolveSnapshot(
+  cachePath: string,
+  fixturePath: string,
+  read: typeof SnapshotModule.readSnapshot,
+): Promise<ResolvedSnapshot> {
+  try {
+    return { source: "cache", snapshot: await read(cachePath) };
+  } catch (error) {
+    if (!CodedErrorSchema.safeParse(error).success) {
+      throw error;
+    }
+  }
+  return { source: "fixture", snapshot: await read(fixturePath) };
+}
 
 const ALLOWED_FETCH_SITES = new Set(["same-origin", "none"]);
 
@@ -119,10 +123,9 @@ export function previewPlugin(env: Record<string, string>): Plugin {
   const projectRoot = process.cwd();
   const srcDir = resolve(projectRoot, "src");
   const statsConfigPath = resolve(projectRoot, "stats.config.ts");
-  const cachePath = resolve(projectRoot, SNAPSHOT_PATH);
   const fixturePath = resolve(projectRoot, FIXTURE_PATH);
 
-  let refreshing: Promise<Snapshot> | null = null;
+  let refreshing: Promise<SnapshotModule.Snapshot> | null = null;
 
   return {
     name: "stats-preview",
@@ -145,24 +148,51 @@ export function previewPlugin(env: Record<string, string>): Plugin {
         );
       }
 
+      async function loadSnapshotModule() {
+        const module = SnapshotModuleSchema.parse(
+          await server.ssrLoadModule(resolve(srcDir, "fetch/snapshot.ts")),
+        );
+        return {
+          ...module,
+          cachePath: resolve(projectRoot, module.SNAPSHOT_PATH),
+        };
+      }
+
+      async function loadEnvModule() {
+        return EnvModuleSchema.parse(
+          await server.ssrLoadModule(resolve(srcDir, "cli/env.ts")),
+        );
+      }
+
       async function renderFiles(): Promise<{
         resolved: ResolvedSnapshot;
         files: RenderModule.OutputFile[];
       }> {
-        const [{ renderAll }, { loadConfig }] = await Promise.all([
-          loadRender(),
-          loadConfigModule(),
-        ]);
+        const [{ renderAll }, { loadConfig }, { readSnapshot, cachePath }] =
+          await Promise.all([
+            loadRender(),
+            loadConfigModule(),
+            loadSnapshotModule(),
+          ]);
         const config = await loadConfig(env);
-        const resolved = await resolveSnapshot(cachePath, fixturePath);
+        const resolved = await resolveSnapshot(
+          cachePath,
+          fixturePath,
+          readSnapshot,
+        );
         return { resolved, files: renderAll(resolved.snapshot, config) };
       }
 
-      function refresh(token: string): Promise<Snapshot> {
+      function refresh(token: string): Promise<SnapshotModule.Snapshot> {
         refreshing ??= (async () => {
-          const [{ loadConfig }, { fetchSnapshot }] = await Promise.all([
+          const [
+            { loadConfig },
+            { fetchSnapshot },
+            { writeSnapshot, cachePath },
+          ] = await Promise.all([
             loadConfigModule(),
             loadFetch(),
+            loadSnapshotModule(),
           ]);
           const config = await loadConfig(env);
           const snapshot = await fetchSnapshot(config, token);
@@ -210,6 +240,13 @@ export function previewPlugin(env: Record<string, string>): Plugin {
       }
 
       async function handleRefresh(res: ServerResponse): Promise<void> {
+        let requireToken: typeof EnvModule.requireToken;
+        try {
+          ({ requireToken } = await loadEnvModule());
+        } catch (error) {
+          sendError(res, 500, "FETCH_FAILED", describeError(error));
+          return;
+        }
         let token: string;
         try {
           token = requireToken(env);
@@ -268,18 +305,28 @@ export function previewPlugin(env: Record<string, string>): Plugin {
 
       watchSources(server, srcDir, statsConfigPath);
 
-      if (!existsSync(cachePath) && (env.GH_TOKEN?.trim() ?? "") !== "") {
+      fetchIfCacheMissing().catch((error: unknown) => {
+        server.config.logger.error(
+          `[preview] fetch failed: ${describeError(error)}`,
+        );
+      });
+
+      async function fetchIfCacheMissing(): Promise<void> {
+        if ((env.GH_TOKEN?.trim() ?? "") === "") {
+          return;
+        }
+        const [{ cachePath }, { requireToken }] = await Promise.all([
+          loadSnapshotModule(),
+          loadEnvModule(),
+        ]);
+        if (existsSync(cachePath)) {
+          return;
+        }
         const logger = server.config.logger;
         logger.info("[preview] no snapshot cache, fetching once");
-        refresh(requireToken(env)).then(
-          () => {
-            logger.info("[preview] snapshot fetched");
-            server.ws.send({ type: "full-reload" });
-          },
-          (error: unknown) => {
-            logger.error(`[preview] fetch failed: ${describeError(error)}`);
-          },
-        );
+        await refresh(requireToken(env));
+        logger.info("[preview] snapshot fetched");
+        server.ws.send({ type: "full-reload" });
       }
     },
   };

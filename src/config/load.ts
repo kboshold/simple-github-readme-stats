@@ -40,7 +40,7 @@ function describeIssues(error: z.ZodError): string[] {
   });
 }
 
-export function resolveConfig(input: unknown, env: Env = process.env): Config {
+export function resolveConfig(input: unknown, env: Env): Config {
   const config = ConfigSchema.safeParse(input);
   const lists = EnvListsSchema.safeParse({
     STATS_ORGS: splitList(env.STATS_ORGS),

@@ -64,8 +64,9 @@ describe("equal size layout", () => {
 
 describe("renderAll", () => {
   it("is byte-identical across renders", async () => {
-    const snapshot = await readSnapshot(FIXTURES.main);
-    expect(renderAll(snapshot, config)).toEqual(renderAll(snapshot, config));
+    const first = renderAll(await readSnapshot(FIXTURES.main), config);
+    const second = renderAll(await readSnapshot(FIXTURES.main), config);
+    expect(second).toEqual(first);
   });
 
   it("skips disabled cards", async () => {

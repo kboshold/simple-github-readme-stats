@@ -246,6 +246,20 @@ describe("renderTopLangsCard", () => {
     expect(names(svg)).toEqual(["Microsoft De… 60.00%", "Microsoft D… 40.00%"]);
   });
 
+  it("grows past a smaller height at textSize 16", () => {
+    const svg = render(REFERENCE, {
+      cards: {
+        topLangs: {
+          hide: ["html", "scss", "css"],
+          width: 437,
+          textSize: 16,
+          height: 150,
+        },
+      },
+    });
+    expect(svg).toContain('viewBox="0 0 437 203"');
+  });
+
   it("omits the tspan without a percent gap", () => {
     const svg = render(REFERENCE);
     expect(svg).not.toContain("<tspan");
@@ -355,6 +369,16 @@ describe("listLayout", () => {
       rowHeight: 25,
       listY: 28,
       height: 195,
+    });
+  });
+
+  it("lets the content win over a smaller height at textSize 16", () => {
+    expect(
+      listLayout({ textSize: 16, height: 150, percentGap: 0 }, 8),
+    ).toMatchObject({
+      rowHeight: 25,
+      listY: 38,
+      height: 203,
     });
   });
 
