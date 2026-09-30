@@ -16,7 +16,7 @@ export interface ClientOptions {
   sleep?: (ms: number) => Promise<void>;
 }
 
-type Failure =
+export type Failure =
   | { retry: false; error: StatsError }
   | { retry: true; error: StatsError; retryAfterMs: number };
 
@@ -31,7 +31,7 @@ const GraphqlErrorsSchema = z.array(
   }),
 );
 
-const HttpErrorSchema = z.object({
+export const HttpErrorSchema = z.object({
   status: z.number(),
   message: z.string(),
   response: z.object({ headers: z.record(z.string(), z.unknown()) }).optional(),
@@ -88,7 +88,9 @@ function classifyGraphqlError(error: GraphqlResponseError<unknown>): Failure {
   );
 }
 
-function classifyHttpError(error: z.infer<typeof HttpErrorSchema>): Failure {
+export function classifyHttpError(
+  error: z.infer<typeof HttpErrorSchema>,
+): Failure {
   const { status, message, response } = error;
 
   if (response === undefined) {
@@ -140,6 +142,25 @@ function classify(error: unknown): Failure {
   return fatal(new StatsError("API_ERROR", message, { cause: error }));
 }
 
+export async function withRetry<T>(
+  operation: () => Promise<T>,
+  classifyError: (error: unknown) => Failure,
+  sleep: (ms: number) => Promise<void> = (ms) => delay(ms),
+): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      const failure = classifyError(error);
+      const backoff = BACKOFF_MS[attempt];
+      if (!failure.retry || backoff === undefined) {
+        throw failure.error;
+      }
+      await sleep(Math.max(backoff, failure.retryAfterMs));
+    }
+  }
+}
+
 export function createClient(
   token: string,
   options: ClientOptions = {},
@@ -150,22 +171,11 @@ export function createClient(
     request: { fetch: options.fetch ?? fetch },
   });
 
-  async function execute(
+  function execute(
     document: string,
     variables: Record<string, unknown>,
   ): Promise<unknown> {
-    for (let attempt = 0; ; attempt++) {
-      try {
-        return await request(document, variables);
-      } catch (error) {
-        const failure = classify(error);
-        const backoff = BACKOFF_MS[attempt];
-        if (!failure.retry || backoff === undefined) {
-          throw failure.error;
-        }
-        await sleep(Math.max(backoff, failure.retryAfterMs));
-      }
-    }
+    return withRetry(() => request(document, variables), classify, sleep);
   }
 
   return {
