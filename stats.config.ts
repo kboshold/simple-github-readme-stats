@@ -8,6 +8,8 @@ export default defineConfig({
   },
   cards: {
     topLangs: {
+      width: 437,
+      height: 195,
       hide: ["html", "scss", "css"],
     },
   },

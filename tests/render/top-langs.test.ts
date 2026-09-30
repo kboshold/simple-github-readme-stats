@@ -3,6 +3,7 @@ import { type ConfigInput, mocha } from "../../src/config/index.ts";
 import { ConfigSchema } from "../../src/config/schema.ts";
 import type { LanguageStat, Snapshot } from "../../src/fetch/snapshot.ts";
 import {
+  columnOffset,
   renderTopLangsCard,
   selectLanguages,
 } from "../../src/render/cards/top-langs.ts";
@@ -169,5 +170,45 @@ describe("renderTopLangsCard", () => {
     expect(render([{ name: "F<#>", color: "000000", bytes: 1 }])).toContain(
       "F&lt;#&gt; 100.00%",
     );
+  });
+
+  it("treats height as a minimum and pads below the content", () => {
+    expect(
+      render(REFERENCE, {
+        cards: { topLangs: { hide: ["html", "scss", "css"], height: 150 } },
+      }),
+    ).toContain('height="190"');
+    const padded = render(REFERENCE, {
+      cards: { topLangs: { hide: ["html", "scss", "css"], height: 300 } },
+    });
+    expect(padded).toContain('viewBox="0 0 320 300"');
+    expect(padded).toContain(
+      '<g data-testid="main-card-body" transform="translate(0, 55)">',
+    );
+  });
+
+  it("scales the second column with the card width", () => {
+    expect(columnOffset(320)).toBe(150);
+    expect(columnOffset(300)).toBe(150);
+    expect(columnOffset(437)).toBe(194);
+    const svg = render(REFERENCE, {
+      cards: { topLangs: { hide: ["html", "scss", "css"], width: 437 } },
+    });
+    expect(svg).toContain('<g transform="translate(194, 0)">');
+  });
+
+  it("truncates second-column names against the scaled offset", () => {
+    const long = "Microsoft Developer Studio Project";
+    const svg = render(
+      [
+        { name: long, color: "000000", bytes: 60 },
+        { name: long, color: "000000", bytes: 40 },
+      ],
+      { cards: { topLangs: { width: 437 } } },
+    );
+    expect(names(svg)).toEqual([
+      "Microsoft Developer S… 60.00%",
+      "Microsoft Developer S… 40.00%",
+    ]);
   });
 });

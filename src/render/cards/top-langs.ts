@@ -17,7 +17,7 @@ export interface ShownLanguage {
 
 const DEFAULT_COLOR = "858585";
 const ROW_HEIGHT = 25;
-const COLUMN_X = 150;
+const MIN_COLUMN_X = 150;
 const FIRST_ROW_DELAY_MS = 450;
 const ROW_DELAY_STEP_MS = 150;
 const BAR_HEIGHT = 8;
@@ -102,11 +102,16 @@ function renderBar(languages: ShownLanguage[], barWidth: number): string {
 ${segments.join("\n")}`;
 }
 
+export function columnOffset(cardWidth: number): number {
+  return Math.max(
+    MIN_COLUMN_X,
+    Math.round((cardWidth - 2 * CARD_PADDING_X) / 2),
+  );
+}
+
 function columnTextWidths(cardWidth: number): [number, number] {
-  return [
-    COLUMN_X - TEXT_X,
-    cardWidth - 2 * CARD_PADDING_X - COLUMN_X - TEXT_X,
-  ];
+  const offset = columnOffset(cardWidth);
+  return [offset - TEXT_X, cardWidth - 2 * CARD_PADDING_X - offset - TEXT_X];
 }
 
 function renderItem(
@@ -129,12 +134,13 @@ function renderItem(
 
 function renderList(languages: ShownLanguage[], cardWidth: number): string {
   const widths = columnTextWidths(cardWidth);
+  const offset = columnOffset(cardWidth);
   const split = Math.ceil(languages.length / 2);
   const columns = [languages.slice(0, split), languages.slice(split)]
     .filter((column) => column.length > 0)
     .map(
       (column, index) =>
-        `<g transform="translate(${index * COLUMN_X}, 0)">${column.map((language, row) => renderItem(language, row, widths[index] ?? 0)).join("")}</g>`,
+        `<g transform="translate(${index * offset}, 0)">${column.map((language, row) => renderItem(language, row, widths[index] ?? 0)).join("")}</g>`,
     );
   return `<g transform="translate(0, 25)">
 ${columns.join("")}
@@ -151,7 +157,10 @@ export function renderTopLangsCard(
   const barWidth = options.width - 50;
   const fullTitle = options.title ?? DEFAULT_TITLE;
   const title = truncate(fullTitle, Math.floor(barWidth / TITLE_CHAR_WIDTH_PX));
-  const height = 90 + ROW_HEIGHT * Math.ceil(languages.length / 2);
+  const height = Math.max(
+    90 + ROW_HEIGHT * Math.ceil(languages.length / 2),
+    options.height ?? 0,
+  );
   const list = languages
     .map((language) => `${language.name} ${formatPercent(language.percent)}%`)
     .join(", ");

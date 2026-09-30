@@ -34,6 +34,27 @@ describe.each(Object.entries(FIXTURES))("fixture %s", (fixture, path) => {
   });
 });
 
+describe("equal size layout", () => {
+  it("renders top-langs at 437x195", async () => {
+    const snapshot = await readSnapshot(FIXTURES.main);
+    const equal = ConfigSchema.parse({
+      username: "octocat",
+      gist: { id: "a".repeat(32) },
+      themes: { dark: config.themes.dark },
+      cards: {
+        stats: { enabled: false },
+        topLangs: { width: 437, height: 195, hide: ["html", "scss", "css"] },
+      },
+    });
+    const [file] = renderAll(snapshot, equal);
+    expect(file?.name).toBe("top-langs-dark.svg");
+    expect(file?.content).toContain('viewBox="0 0 437 195"');
+    await expect(file?.content).toMatchFileSnapshot(
+      "__snapshots__/equal-size/top-langs-dark.svg",
+    );
+  });
+});
+
 describe("renderAll", () => {
   it("is byte-identical across renders", async () => {
     const snapshot = await readSnapshot(FIXTURES.main);

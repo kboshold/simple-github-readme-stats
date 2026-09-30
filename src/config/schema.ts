@@ -11,6 +11,7 @@ const hexColor = z
   );
 
 const width = z.number().int().min(300).max(600);
+const minHeight = z.number().int().min(150).max(400).optional();
 
 export const LoginSchema = z
   .string()
@@ -33,6 +34,7 @@ export const StatsCardOptionsSchema = z
   .object({
     enabled: z.boolean().default(true),
     width: width.default(437),
+    height: minHeight,
     showIcons: z.boolean().default(true),
     hide: z
       .array(z.enum(["stars", "commits", "prs", "issues", "contributedTo"]))
@@ -51,6 +53,7 @@ export const StatsCardOptionsSchema = z
 export const TopLangsCardOptionsSchema = z.object({
   enabled: z.boolean().default(true),
   width: width.default(320),
+  height: minHeight,
   count: z.number().int().min(1).max(20).default(8),
   hide: z.array(z.string()).default([]),
   title: z.string().optional(),

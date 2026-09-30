@@ -4,11 +4,11 @@ A GitHub Actions workflow that renders your GitHub stats and top languages as SV
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://gist.githubusercontent.com/kboshold/ab2d9bf8ae29c3f61f892b67fb3282a2/raw/stats-dark.svg">
-  <img height="200" alt="GitHub stats for 'kboshold'" src="https://gist.githubusercontent.com/kboshold/ab2d9bf8ae29c3f61f892b67fb3282a2/raw/stats-light.svg">
+  <img width="49%" alt="GitHub stats for 'kboshold'" src="https://gist.githubusercontent.com/kboshold/ab2d9bf8ae29c3f61f892b67fb3282a2/raw/stats-light.svg">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://gist.githubusercontent.com/kboshold/ab2d9bf8ae29c3f61f892b67fb3282a2/raw/top-langs-dark.svg">
-  <img height="200" alt="Top languages for 'kboshold'" src="https://gist.githubusercontent.com/kboshold/ab2d9bf8ae29c3f61f892b67fb3282a2/raw/top-langs-light.svg">
+  <img width="49%" alt="Top languages for 'kboshold'" src="https://gist.githubusercontent.com/kboshold/ab2d9bf8ae29c3f61f892b67fb3282a2/raw/top-langs-light.svg">
 </picture>
 
 The cards follow the look of [github-readme-stats](https://github.com/anuraghazra/github-readme-stats), with a rank ring and a short load animation. Because the token belongs to you, private repositories and private contributions are counted too.
@@ -90,6 +90,7 @@ If you set `themes`, it replaces the defaults. List every theme you want rendere
 | ----- | ---- | ------- | ----------- |
 | `enabled` | boolean | `true` | Render this card |
 | `width` | number | `437` | Width in px, 300 to 600. At least 420 while the rank ring is shown |
+| `height` | number | unset | Minimum height in px, 150 to 400. The card is at least this tall; content stays at the top |
 | `showIcons` | boolean | `true` | Show icons before the labels |
 | `hide` | array of `"stars"`, `"commits"`, `"prs"`, `"issues"`, `"contributedTo"` | `[]` | Rows to hide |
 | `hideRank` | boolean | `false` | Hide the rank ring |
@@ -100,7 +101,8 @@ If you set `themes`, it replaces the defaults. List every theme you want rendere
 | Field | Type | Default | Description |
 | ----- | ---- | ------- | ----------- |
 | `enabled` | boolean | `true` | Render this card |
-| `width` | number | `320` | Width in px, 300 to 600 |
+| `width` | number | `320` | Width in px, 300 to 600. The second language column moves right as the card gets wider |
+| `height` | number | unset | Minimum height in px, 150 to 400. The card is at least this tall; content stays at the top |
 | `count` | number | `8` | Number of languages shown, 1 to 20 |
 | `hide` | string[] | `[]` | Language names to drop, case-insensitive |
 | `title` | string | `Most Used Languages` | Card title |
@@ -136,13 +138,15 @@ Add this to your profile README and replace `{username}` and `{gistId}`:
 ```html
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://gist.githubusercontent.com/{username}/{gistId}/raw/stats-dark.svg">
-  <img height="200" alt="GitHub stats for '{username}'" src="https://gist.githubusercontent.com/{username}/{gistId}/raw/stats-light.svg">
+  <img width="49%" alt="GitHub stats for '{username}'" src="https://gist.githubusercontent.com/{username}/{gistId}/raw/stats-light.svg">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://gist.githubusercontent.com/{username}/{gistId}/raw/top-langs-dark.svg">
-  <img height="200" alt="Top languages for '{username}'" src="https://gist.githubusercontent.com/{username}/{gistId}/raw/top-langs-light.svg">
+  <img width="49%" alt="Top languages for '{username}'" src="https://gist.githubusercontent.com/{username}/{gistId}/raw/top-langs-light.svg">
 </picture>
 ```
+
+Each card takes 49% of the row. Give both cards the same `width` and `height` in the config so they line up, for example `width: 437` and `height: 195` on `cards.topLangs` to match the default stats card.
 
 The URL pattern for any file is `https://gist.githubusercontent.com/{username}/{gistId}/raw/{file}`. Leaving out the revision in the URL always serves the latest version.
 
