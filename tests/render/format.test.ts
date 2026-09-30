@@ -19,6 +19,11 @@ describe("formatCount", () => {
     expect(formatCount(4528)).toBe("4.5k");
     expect(formatCount(15_960)).toBe("16k");
   });
+
+  it("keeps the sign for negative values", () => {
+    expect(formatCount(-61)).toBe("-61");
+    expect(formatCount(-1250)).toBe("-1.3k");
+  });
 });
 
 describe("formatPercent", () => {
@@ -49,5 +54,15 @@ describe("truncate", () => {
   it("cuts long text and appends an ellipsis within maxChars", () => {
     expect(truncate("Jupyter Notebook", 10)).toBe("Jupyter N…");
     expect(Array.from(truncate("Jupyter Notebook", 10))).toHaveLength(10);
+  });
+
+  it("keeps a single character as just the ellipsis", () => {
+    expect(truncate("TypeScript", 1)).toBe("…");
+  });
+
+  it("returns an empty string when maxChars is zero or negative", () => {
+    expect(truncate("TypeScript", 0)).toBe("");
+    expect(truncate("TypeScript", -3)).toBe("");
+    expect(truncate("", 0)).toBe("");
   });
 });

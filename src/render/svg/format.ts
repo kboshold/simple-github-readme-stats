@@ -1,8 +1,8 @@
 export function formatCount(n: number): string {
   if (Math.abs(n) > 999) {
-    return `${Math.sign(n) * Number.parseFloat((Math.abs(n) / 1000).toFixed(1))}k`;
+    return `${Number.parseFloat((n / 1000).toFixed(1))}k`;
   }
-  return String(Math.sign(n) * Math.abs(n));
+  return String(n);
 }
 
 export function formatPercent(n: number): string {
@@ -22,10 +22,11 @@ export function escapeXml(text: string): string {
 }
 
 export function truncate(text: string, maxChars: number): string {
+  if (maxChars <= 0) return "";
   const chars = Array.from(text);
   if (chars.length <= maxChars) return text;
   return `${chars
-    .slice(0, Math.max(0, maxChars - 1))
+    .slice(0, maxChars - 1)
     .join("")
     .trimEnd()}…`;
 }

@@ -1,17 +1,4 @@
-export const RANK_LEVELS = [
-  "S",
-  "A+",
-  "A",
-  "A-",
-  "B+",
-  "B",
-  "B-",
-  "C+",
-  "C",
-] as const;
-export type RankLevel = (typeof RANK_LEVELS)[number];
-
-const THRESHOLDS: ReadonlyArray<readonly [number, RankLevel]> = [
+const THRESHOLDS = [
   [1, "S"],
   [12.5, "A+"],
   [25, "A"],
@@ -21,7 +8,12 @@ const THRESHOLDS: ReadonlyArray<readonly [number, RankLevel]> = [
   [75, "B-"],
   [87.5, "C+"],
   [100, "C"],
-];
+] as const;
+
+export type RankLevel = (typeof THRESHOLDS)[number][1];
+export const RANK_LEVELS: readonly RankLevel[] = THRESHOLDS.map(
+  ([, level]) => level,
+);
 
 export interface RankInput {
   commits: number;

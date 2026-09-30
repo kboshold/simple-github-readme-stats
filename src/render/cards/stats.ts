@@ -184,16 +184,17 @@ export function renderStatsCard(
   const options = config.cards.stats;
   const rows = buildRows(snapshot, config);
   const { totals } = snapshot;
-  const rank = calculateRank({
-    commits: totals.commits,
-    prs: totals.prs,
-    issues: totals.issues,
-    reviews: totals.reviews,
-    stars: totals.stars,
-    followers: snapshot.user.followers,
-    allCommits: config.commitsWindow === "all",
-  });
-  const shownRank = options.hideRank ? null : rank;
+  const shownRank = options.hideRank
+    ? null
+    : calculateRank({
+        commits: totals.commits,
+        prs: totals.prs,
+        issues: totals.issues,
+        reviews: totals.reviews,
+        stars: totals.stars,
+        followers: snapshot.user.followers,
+        allCommits: config.commitsWindow === "all",
+      });
   const height = Math.max(
     45 + (rows.length + 1) * ROW_HEIGHT,
     shownRank === null ? 0 : 150,
