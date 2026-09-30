@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "fetchedAt": "2026-01-01T00:00:00.000Z",
+  "user": {
+    "login": "octocat",
+    "name": "Mona Lisa Octocat",
+    "followers": 100
+  },
+  "totals": {
+    "stars": 500,
+    "commits": 3000,
+    "prs": 400,
+    "issues": 200,
+    "reviews": 100,
+    "contributedTo": 40
+  },
+  "languages": [
+    {
+      "name": "TypeScript",
+      "color": "3178c6",
+      "bytes": 500000
+    }
+  ]
+}
