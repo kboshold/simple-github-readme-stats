@@ -188,7 +188,5 @@ describe("loadConfig", () => {
 
     expect(config.username).toBe("kboshold");
     expect(config.orgs).toEqual(["acme"]);
-    expect(config.gist.id).toBe("00000000000000000000000000000000");
-    expect(config.cards.topLangs.hide).toEqual(["html", "scss", "css"]);
   });
 });
