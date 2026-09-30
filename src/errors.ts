@@ -13,7 +13,8 @@ export type StatsErrorCode =
   | "GIST_FORBIDDEN"
   | "CARD_NOT_FOUND"
   | "RENDER_FAILED"
-  | "FETCH_FAILED";
+  | "FETCH_FAILED"
+  | "ORIGIN_FORBIDDEN";
 
 export class StatsError extends Error {
   readonly code: StatsErrorCode;
