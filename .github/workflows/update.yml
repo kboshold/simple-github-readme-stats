@@ -26,17 +26,21 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm data:fetch
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Fetch data
+        run: pnpm data:fetch
         env:
           GH_TOKEN: ${{ secrets.STATS_TOKEN }}
           STATS_ORGS: ${{ secrets.STATS_ORGS }}
           STATS_EXCLUDE_REPOS: ${{ secrets.STATS_EXCLUDE_REPOS }}
-      - run: pnpm svg:render
+      - name: Render cards
+        run: pnpm svg:render
         env:
           STATS_ORGS: ${{ secrets.STATS_ORGS }}
           STATS_EXCLUDE_REPOS: ${{ secrets.STATS_EXCLUDE_REPOS }}
-      - run: pnpm gist:push
+      - name: Push to Gist
+        run: pnpm gist:push
         env:
           GH_TOKEN: ${{ secrets.STATS_TOKEN }}
           STATS_ORGS: ${{ secrets.STATS_ORGS }}
