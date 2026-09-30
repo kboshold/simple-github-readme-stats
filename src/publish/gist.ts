@@ -83,6 +83,32 @@ function classifyGistError(error: unknown): Failure {
   return { ...failure, error: apiError(failure.error) };
 }
 
+class RawStatusError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`Gist raw file request failed (${status})`);
+    this.status = status;
+  }
+}
+
+function classifyRawError(error: unknown): Failure {
+  if (error instanceof RawStatusError) {
+    const failure = new StatsError("API_ERROR", error.message);
+    return error.status === 502 || error.status === 503
+      ? { retry: true, error: failure, retryAfterMs: 0 }
+      : { retry: false, error: failure };
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  return {
+    retry: true,
+    error: new StatsError("API_ERROR", `Network error: ${message}`, {
+      cause: error,
+    }),
+    retryAfterMs: 0,
+  };
+}
+
 export async function pushToGist(options: PushOptions): Promise<string[]> {
   const { gistId, token, files, dryRun } = options;
   const fetchImpl = options.fetch ?? fetch;
@@ -104,16 +130,17 @@ export async function pushToGist(options: PushOptions): Promise<string[]> {
     if (url === undefined || url === null) {
       return undefined;
     }
-    return retrying(async () => {
-      const response = await fetchImpl(url);
-      if (!response.ok) {
-        throw new StatsError(
-          "API_ERROR",
-          `Gist raw file request failed (${response.status})`,
-        );
-      }
-      return response.text();
-    });
+    return withRetry(
+      async () => {
+        const response = await fetchImpl(url);
+        if (!response.ok) {
+          throw new RawStatusError(response.status);
+        }
+        return response.text();
+      },
+      classifyRawError,
+      sleep,
+    );
   }
 
   const { data } = await retrying(() =>

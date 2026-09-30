@@ -97,12 +97,6 @@ describe("diffFiles", () => {
     const remote = new Map(local.map((file) => [file.name, file.content]));
     expect(diffFiles(local, remote)).toEqual([]);
   });
-
-  it("ignores inherited object keys", () => {
-    expect(
-      diffFiles([{ name: "constructor", content: "x" }], new Map()),
-    ).toEqual(["constructor"]);
-  });
 });
 
 describe("pushToGist", () => {
@@ -187,6 +181,36 @@ describe("pushToGist", () => {
     expect(await run(ctx)).toEqual([]);
     expect(ctx.requests).toHaveLength(2);
     expect(ctx.requests[1]?.url).toBe(RAW_URL);
+  });
+
+  it("retries a network error on the raw file fetch", async () => {
+    const ctx = setup([
+      () =>
+        gist({
+          "stats-dark.svg": { truncated: true, raw_url: RAW_URL },
+          "stats-light.svg": { content: "<svg>light</svg>" },
+        }),
+      () => {
+        throw new TypeError("fetch failed");
+      },
+      () => new Response("<svg>dark</svg>", { status: 200 }),
+    ]);
+
+    expect(await run(ctx)).toEqual([]);
+    expect(ctx.sleeps).toEqual([1000]);
+    expect(ctx.requests.map((request) => request.url)).toEqual([
+      "https://api.github.com/gists/abc123",
+      RAW_URL,
+      RAW_URL,
+    ]);
+  });
+
+  it("treats a file named like an object key as new", async () => {
+    const ctx = setup([() => gist({})]);
+
+    expect(
+      await run(ctx, true, [{ name: "constructor", content: "x" }]),
+    ).toEqual(["constructor"]);
   });
 
   it("does not send a PATCH on a dry run", async () => {
