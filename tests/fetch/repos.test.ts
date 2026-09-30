@@ -43,6 +43,16 @@ function fakeClient(nextPage: (call: number) => unknown) {
 }
 
 describe("fetchRepos", () => {
+  it("maps null language edges to an empty list", async () => {
+    const { client } = fakeClient(() =>
+      page([{ ...repo("one"), languages: { edges: null } }], null),
+    );
+
+    const [first] = await fetchRepos(client, "octocat");
+
+    expect(first?.languages).toEqual([]);
+  });
+
   it("follows the cursor and maps nodes", async () => {
     const { client, calls } = fakeClient((call) =>
       call === 1
