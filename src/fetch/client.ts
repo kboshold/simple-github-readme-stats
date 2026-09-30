@@ -77,10 +77,13 @@ function classifyGraphqlError(error: GraphqlResponseError<unknown>): Failure {
       (entry.path === undefined ? entry.message : undefined) ??
       "unknown",
   );
+  const hint = details.includes("FORBIDDEN")
+    ? " (the token may lack SSO authorization for an organization)"
+    : "";
   return fatal(
     new StatsError(
       "API_ERROR",
-      `GraphQL request failed: ${[...new Set(details)].join(", ")}`,
+      `GraphQL request failed: ${[...new Set(details)].join(", ")}${hint}`,
     ),
   );
 }
@@ -97,7 +100,11 @@ function classifyHttpError(error: z.infer<typeof HttpErrorSchema>): Failure {
     );
   }
   if (status === 403 || status === 429) {
-    const retryAfter = Number(response.headers["retry-after"]);
+    const header = response.headers["retry-after"];
+    const retryAfter =
+      typeof header === "string" && header.trim() !== ""
+        ? Number(header)
+        : Number.NaN;
     const hasRetryAfter = Number.isFinite(retryAfter) && retryAfter >= 0;
     const limited = new StatsError(
       "RATE_LIMITED",

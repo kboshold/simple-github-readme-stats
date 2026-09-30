@@ -205,6 +205,17 @@ describe("createClient", () => {
     expect(sleeps).toEqual([]);
   });
 
+  it("does not retry a plain 403 with an empty retry-after header", async () => {
+    const { client, sleeps } = setup([
+      () => json(403, { message: "Forbidden" }, { "retry-after": "" }),
+    ]);
+
+    const error = await captureError(client.query("query", {}, schema));
+
+    expect(error.code).toBe("API_ERROR");
+    expect(sleeps).toEqual([]);
+  });
+
   it("maps a malformed body to RESPONSE_INVALID", async () => {
     const wrongShape = setup([() => json(200, { data: { viewer: {} } })]);
     const notJson = setup([
@@ -236,6 +247,7 @@ describe("createClient", () => {
 
     expect(error.code).toBe("API_ERROR");
     expect(error.message).toContain("FORBIDDEN");
+    expect(error.message).toContain("SSO authorization");
     expect(error.message).not.toContain("secret-repo");
   });
 });
