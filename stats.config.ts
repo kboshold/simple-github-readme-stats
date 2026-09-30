@@ -11,7 +11,7 @@ export default defineConfig({
       width: 437,
       height: 195,
       textSize: 13,
-      percentGap: 8,
+      percentGap: 14,
       hide: ["html", "scss", "css"],
     },
   },
