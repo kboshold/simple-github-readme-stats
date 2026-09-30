@@ -37,7 +37,15 @@ describe("resolveConfig", () => {
           hide: [],
           hideRank: false,
         },
-        topLangs: { enabled: true, width: 320, count: 8, hide: [] },
+        topLangs: {
+          enabled: true,
+          width: 320,
+          textSize: 11,
+          percentGap: 0,
+          percentSeparator: "",
+          count: 8,
+          hide: [],
+        },
       },
     });
   });
@@ -131,6 +139,110 @@ describe("resolveConfig", () => {
         resolveConfig({ ...minimal, cards: { stats: { width: 601 } } }, {}),
       ).message,
     ).toContain("cards.stats.width");
+  });
+
+  it("accepts card heights from 150 to 400 and leaves them unset by default", () => {
+    expect(resolveConfig(minimal, {}).cards.topLangs.height).toBeUndefined();
+    const config = resolveConfig(
+      {
+        ...minimal,
+        cards: { stats: { height: 150 }, topLangs: { height: 400 } },
+      },
+      {},
+    );
+    expect(config.cards.stats.height).toBe(150);
+    expect(config.cards.topLangs.height).toBe(400);
+  });
+
+  it("rejects card heights outside 150-400 or not integers", () => {
+    expect(
+      captureError(() =>
+        resolveConfig({ ...minimal, cards: { stats: { height: 149 } } }, {}),
+      ).message,
+    ).toContain("cards.stats.height");
+    expect(
+      captureError(() =>
+        resolveConfig({ ...minimal, cards: { topLangs: { height: 401 } } }, {}),
+      ).message,
+    ).toContain("cards.topLangs.height");
+    expect(
+      captureError(() =>
+        resolveConfig(
+          { ...minimal, cards: { topLangs: { height: 200.5 } } },
+          {},
+        ),
+      ).message,
+    ).toContain("cards.topLangs.height");
+  });
+
+  it("accepts textSize from 10 to 16 and rejects other values", () => {
+    for (const textSize of [10, 16]) {
+      expect(
+        resolveConfig({ ...minimal, cards: { topLangs: { textSize } } }, {})
+          .cards.topLangs.textSize,
+      ).toBe(textSize);
+    }
+    for (const textSize of [9, 17, 12.5]) {
+      expect(
+        captureError(() =>
+          resolveConfig({ ...minimal, cards: { topLangs: { textSize } } }, {}),
+        ).message,
+      ).toContain("cards.topLangs.textSize");
+    }
+  });
+
+  it("accepts percentGap from 0 to 40 and rejects other values", () => {
+    for (const percentGap of [0, 40]) {
+      expect(
+        resolveConfig({ ...minimal, cards: { topLangs: { percentGap } } }, {})
+          .cards.topLangs.percentGap,
+      ).toBe(percentGap);
+    }
+    for (const percentGap of [-1, 41, 2.5]) {
+      expect(
+        captureError(() =>
+          resolveConfig(
+            { ...minimal, cards: { topLangs: { percentGap } } },
+            {},
+          ),
+        ).message,
+      ).toContain("cards.topLangs.percentGap");
+    }
+  });
+
+  it("accepts a percentSeparator of up to 3 characters", () => {
+    for (const percentSeparator of ["", "•", "···"]) {
+      expect(
+        resolveConfig(
+          { ...minimal, cards: { topLangs: { percentSeparator } } },
+          {},
+        ).cards.topLangs.percentSeparator,
+      ).toBe(percentSeparator);
+    }
+    expect(
+      captureError(() =>
+        resolveConfig(
+          { ...minimal, cards: { topLangs: { percentSeparator: "----" } } },
+          {},
+        ),
+      ).message,
+    ).toContain("cards.topLangs.percentSeparator");
+  });
+
+  it("rejects control characters in separator and titles", () => {
+    function rejected(cards: Record<string, unknown>): string {
+      return captureError(() => resolveConfig({ ...minimal, cards }, {}))
+        .message;
+    }
+    expect(rejected({ topLangs: { percentSeparator: "\n" } })).toContain(
+      "cards.topLangs.percentSeparator",
+    );
+    expect(rejected({ topLangs: { title: "Langs\u0007" } })).toContain(
+      "cards.topLangs.title",
+    );
+    expect(rejected({ stats: { title: "Stats\t" } })).toContain(
+      "cards.stats.title",
+    );
   });
 
   it("merges env lists, de-duplicated case-insensitively", () => {

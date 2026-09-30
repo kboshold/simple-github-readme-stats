@@ -77,7 +77,6 @@ function renderSections(files: string[]): void {
       link.rel = "noopener";
 
       const image = document.createElement("img");
-      image.height = 200;
       image.alt = file;
       image.dataset.file = file;
       image.src = cardUrl(file, version);

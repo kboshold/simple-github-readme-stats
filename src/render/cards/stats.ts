@@ -197,6 +197,7 @@ export function renderStatsCard(
   const height = Math.max(
     45 + (rows.length + 1) * ROW_HEIGHT,
     shownRank === null ? 0 : 150,
+    options.height ?? 0,
   );
   const title = buildTitle(snapshot, config);
   const fullTitle =

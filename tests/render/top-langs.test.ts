@@ -3,6 +3,8 @@ import { type ConfigInput, mocha } from "../../src/config/index.ts";
 import { ConfigSchema } from "../../src/config/schema.ts";
 import type { LanguageStat, Snapshot } from "../../src/fetch/snapshot.ts";
 import {
+  columnOffset,
+  listLayout,
   renderTopLangsCard,
   selectLanguages,
 } from "../../src/render/cards/top-langs.ts";
@@ -169,5 +171,196 @@ describe("renderTopLangsCard", () => {
     expect(render([{ name: "F<#>", color: "000000", bytes: 1 }])).toContain(
       "F&lt;#&gt; 100.00%",
     );
+  });
+
+  it("treats height as a minimum and pads below the content", () => {
+    expect(
+      render(REFERENCE, {
+        cards: { topLangs: { hide: ["html", "scss", "css"], height: 150 } },
+      }),
+    ).toContain('height="190"');
+    const padded = render(REFERENCE, {
+      cards: { topLangs: { hide: ["html", "scss", "css"], height: 300 } },
+    });
+    expect(padded).toContain('viewBox="0 0 320 300"');
+    expect(padded).toContain(
+      '<g data-testid="main-card-body" transform="translate(0, 55)">',
+    );
+  });
+
+  it("scales the second column with the card width", () => {
+    expect(columnOffset(320)).toBe(150);
+    expect(columnOffset(300)).toBe(150);
+    expect(columnOffset(437)).toBe(194);
+    const svg = render(REFERENCE, {
+      cards: { topLangs: { hide: ["html", "scss", "css"], width: 437 } },
+    });
+    expect(svg).toContain('<g transform="translate(194, 0)">');
+  });
+
+  it("truncates second-column names against the scaled offset", () => {
+    const long = "Microsoft Developer Studio Project";
+    const svg = render(
+      [
+        { name: long, color: "000000", bytes: 60 },
+        { name: long, color: "000000", bytes: 40 },
+      ],
+      { cards: { topLangs: { width: 437 } } },
+    );
+    expect(names(svg)).toEqual([
+      "Microsoft Developer S… 60.00%",
+      "Microsoft Developer S… 40.00%",
+    ]);
+  });
+
+  it("keeps the default text layout at textSize 11", () => {
+    const svg = render(REFERENCE);
+    expect(svg).toContain('font: 400 11px "Segoe UI", Ubuntu, Sans-Serif;');
+    expect(svg).toContain('<circle cx="5" cy="6" r="5"');
+    expect(svg).toContain('x="15" y="10" class="lang-name"');
+  });
+
+  it("scales dot, text, bar and list offset with textSize", () => {
+    const svg = render(REFERENCE, {
+      cards: {
+        topLangs: { hide: ["html", "scss", "css"], width: 437, textSize: 13 },
+      },
+    });
+    expect(svg).toContain('font: 400 13px "Segoe UI", Ubuntu, Sans-Serif;');
+    expect(svg).toContain('<circle cx="6" cy="7" r="6"');
+    expect(svg).toContain('x="17" y="12" class="lang-name"');
+    expect(svg).toContain('height="9" fill="white" rx="6"/>');
+    expect(svg).toContain('<g transform="translate(0, 28)">');
+    expect(svg).toContain('viewBox="0 0 437 193"');
+  });
+
+  it("truncates with the scaled character width", () => {
+    const long = "Microsoft Developer Studio Project";
+    const svg = render(
+      [
+        { name: long, color: "000000", bytes: 60 },
+        { name: long, color: "000000", bytes: 40 },
+      ],
+      { cards: { topLangs: { width: 437, textSize: 16 } } },
+    );
+    expect(names(svg)).toEqual(["Microsoft De… 60.00%", "Microsoft D… 40.00%"]);
+  });
+
+  it("omits the tspan without a percent gap", () => {
+    const svg = render(REFERENCE);
+    expect(svg).not.toContain("<tspan");
+    expect(svg).toContain('class="lang-name">TypeScript 54.94%</text>');
+  });
+
+  it("offsets the percentage by the gap", () => {
+    const svg = render(REFERENCE, {
+      cards: { topLangs: { hide: ["html", "scss", "css"], percentGap: 8 } },
+    });
+    expect(svg).toContain(
+      'class="lang-name">TypeScript <tspan dx="8">54.94%</tspan></text>',
+    );
+  });
+
+  it("subtracts the gap from the space for the name", () => {
+    const long = "Microsoft Developer Studio Project";
+    const langs = [
+      { name: long, color: "000000", bytes: 60 },
+      { name: long, color: "000000", bytes: 40 },
+    ];
+    const svg = render(langs, { cards: { topLangs: { percentGap: 12 } } });
+    expect(svg).toContain(
+      'class="lang-name">Microsoft De… <tspan dx="12">60.00%</tspan>',
+    );
+    expect(svg).toContain(
+      'class="lang-name">Microso… <tspan dx="12">40.00%</tspan>',
+    );
+  });
+
+  it("keeps the gap-only output without a separator", () => {
+    const svg = render(REFERENCE, {
+      cards: { topLangs: { hide: ["html", "scss", "css"], percentGap: 8 } },
+    });
+    expect(svg).not.toContain("lang-sep");
+    expect(svg).toContain(
+      'class="lang-name">TypeScript <tspan dx="8">54.94%</tspan></text>',
+    );
+  });
+
+  it("centers the separator in the gap", () => {
+    const svg = render(REFERENCE, {
+      cards: {
+        topLangs: {
+          hide: ["html", "scss", "css"],
+          percentGap: 10,
+          percentSeparator: "•",
+        },
+      },
+    });
+    expect(svg).toContain(
+      'class="lang-name">TypeScript <tspan dx="5" class="lang-sep">•</tspan> <tspan dx="5">54.94%</tspan></text>',
+    );
+    expect(svg).toMatch(/\.lang-sep \{\s*fill-opacity: 0\.5;\s*\}/);
+  });
+
+  it("escapes the separator", () => {
+    const svg = render(REFERENCE, {
+      cards: { topLangs: { percentSeparator: "<&" } },
+    });
+    expect(svg).toContain('class="lang-sep">&lt;&amp;</tspan>');
+  });
+
+  it("leaves room for the separator when truncating", () => {
+    const long = "Microsoft Developer Studio Project";
+    const svg = render(
+      [
+        { name: long, color: "000000", bytes: 60 },
+        { name: long, color: "000000", bytes: 40 },
+      ],
+      { cards: { topLangs: { percentGap: 12, percentSeparator: "•" } } },
+    );
+    expect(svg).toContain('class="lang-name">Microsoft… <tspan');
+    expect(svg).toContain('class="lang-name">Micro… <tspan');
+  });
+});
+
+describe("listLayout", () => {
+  it("keeps 25px rows at the computed height", () => {
+    expect(listLayout({ textSize: 11, percentGap: 0 }, 8)).toMatchObject({
+      rowHeight: 25,
+      listY: 25,
+      height: 190,
+    });
+    expect(listLayout({ textSize: 11, percentGap: 0 }, 0)).toMatchObject({
+      rowHeight: 25,
+      height: 90,
+    });
+  });
+
+  it("spreads rows over a larger minimum height", () => {
+    expect(
+      listLayout({ textSize: 11, height: 195, percentGap: 0 }, 8),
+    ).toMatchObject({
+      rowHeight: 26,
+      height: 195,
+    });
+    expect(
+      listLayout({ textSize: 11, height: 300, percentGap: 0 }, 7),
+    ).toMatchObject({
+      rowHeight: 52,
+      height: 300,
+    });
+    expect(
+      listLayout({ textSize: 13, height: 195, percentGap: 0 }, 8),
+    ).toMatchObject({
+      rowHeight: 25,
+      listY: 28,
+      height: 195,
+    });
+  });
+
+  it("never lets rows shrink below 25px", () => {
+    expect(
+      listLayout({ textSize: 11, height: 150, percentGap: 0 }, 10).rowHeight,
+    ).toBe(25);
   });
 });

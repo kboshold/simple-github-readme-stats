@@ -166,4 +166,14 @@ describe("renderStatsCard", () => {
     expect(svg).toContain("stroke: #89b4fa;");
     expect(svg).toContain("fill: #cdd6f4;");
   });
+
+  it("treats height as a minimum and keeps the computed height when larger", () => {
+    expect(render({ cards: { stats: { height: 150 } } })).toContain(
+      'height="195"',
+    );
+    const padded = render({ cards: { stats: { height: 260 } } });
+    expect(padded).toContain('height="260"');
+    expect(padded).toContain('viewBox="0 0 437 260"');
+    expect(padded).toContain('transform="translate(367, 47.5)"');
+  });
 });
