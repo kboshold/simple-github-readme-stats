@@ -30,6 +30,9 @@ const VALUE_X_WITHOUT_ICONS = 199.01;
 const RING_RADIUS = 40;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 const TITLE_CHAR_WIDTH_PX = 11;
+const RANK_TEXT_FINAL_CSS = `.rank-text {
+  transform: translate(-5px, 5px);
+}`;
 const TITLE_SUFFIX = "'s GitHub Stats";
 
 function buildRows(snapshot: Snapshot, config: Config): StatRow[] {
@@ -219,5 +222,6 @@ export function renderStatsCard(
     theme,
     css: statsCss(theme, shownRank),
     body,
+    reducedMotionCss: shownRank === null ? undefined : RANK_TEXT_FINAL_CSS,
   });
 }

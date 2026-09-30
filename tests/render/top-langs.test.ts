@@ -148,6 +148,23 @@ describe("renderTopLangsCard", () => {
     expect(svg).not.toContain('lang-progress"');
   });
 
+  it("truncates long names per column but keeps them in desc", () => {
+    const long = "Microsoft Developer Studio Project";
+    const svg = render([
+      { name: long, color: "000000", bytes: 60 },
+      { name: long, color: "000000", bytes: 40 },
+    ]);
+    expect(names(svg)).toEqual(["Microsoft Deve… 60.00%", "Microsoft… 40.00%"]);
+    expect(svg).toContain(
+      `<desc id="descId">${long} 60.00%, ${long} 40.00%</desc>`,
+    );
+  });
+
+  it("does not truncate the reference names", () => {
+    for (const name of names(render(REFERENCE)))
+      expect(name).not.toContain("…");
+  });
+
   it("escapes language names", () => {
     expect(render([{ name: "F<#>", color: "000000", bytes: 1 }])).toContain(
       "F&lt;#&gt; 100.00%",

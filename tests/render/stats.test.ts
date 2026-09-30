@@ -147,6 +147,19 @@ describe("renderStatsCard", () => {
     expect(rule).toContain("animation: rankAnimation 1s forwards ease-in-out;");
   });
 
+  it("shows the final rank text position with reduced motion", () => {
+    const svg = render();
+    const block = svg.slice(
+      svg.indexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+    expect(block).toMatch(
+      /\.rank-text \{\s*transform: translate\(-5px, 5px\);\s*\}/,
+    );
+    expect(render({ cards: { stats: { hideRank: true } } })).not.toContain(
+      "rank-text {\n      transform",
+    );
+  });
+
   it("uses theme colors", () => {
     const svg = render();
     expect(svg).toContain("stroke: #89b4fa;");

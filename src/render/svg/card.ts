@@ -12,6 +12,7 @@ export interface CardInput {
   theme: Theme;
   css: string;
   body: string;
+  reducedMotionCss?: string;
 }
 
 export function hex(color: string): string {
@@ -72,18 +73,16 @@ const ANIMATION_CSS = `/* Animations */
   }
 }`;
 
-// Contract: card CSS must set final animated values (e.g. ring stroke-dashoffset) as base styles.
-const REDUCED_MOTION_CSS = `@media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-  }
-  .stagger {
-    opacity: 1;
-  }
-  .rank-text {
-    transform: translate(-5px, 5px);
-  }
-}`;
+// Contract: card CSS must set final animated values (e.g. ring stroke-dashoffset) as base styles;
+// final states that differ from the base style go into `reducedMotionCss`.
+function reducedMotionCss(extra: string): string {
+  const rules = [
+    "* {\n  animation: none !important;\n}",
+    ".stagger {\n  opacity: 1;\n}",
+  ];
+  if (extra.trim() !== "") rules.push(extra.trim());
+  return `@media (prefers-reduced-motion: reduce) {\n${indent(rules.join("\n"), 2)}\n}`;
+}
 
 function indent(text: string, spaces: number): string {
   const pad = " ".repeat(spaces);
@@ -99,7 +98,7 @@ export function renderCard(input: CardInput): string {
     headerCss(theme),
     input.css.trim(),
     ANIMATION_CSS,
-    REDUCED_MOTION_CSS,
+    reducedMotionCss(input.reducedMotionCss ?? ""),
   ]
     .filter((block) => block !== "")
     .join("\n");

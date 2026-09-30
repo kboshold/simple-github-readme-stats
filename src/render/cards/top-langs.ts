@@ -23,6 +23,9 @@ const ROW_DELAY_STEP_MS = 150;
 const BAR_HEIGHT = 8;
 const MIN_SEGMENT_WIDTH = 10;
 const TITLE_CHAR_WIDTH_PX = 11;
+const LANG_CHAR_WIDTH_PX = 6;
+const CARD_PADDING_X = 25;
+const TEXT_X = 15;
 const DEFAULT_TITLE = "Most Used Languages";
 
 export function selectLanguages(
@@ -99,23 +102,39 @@ function renderBar(languages: ShownLanguage[], barWidth: number): string {
 ${segments.join("\n")}`;
 }
 
-function renderItem(language: ShownLanguage, index: number): string {
+function columnTextWidths(cardWidth: number): [number, number] {
+  return [
+    COLUMN_X - TEXT_X,
+    cardWidth - 2 * CARD_PADDING_X - COLUMN_X - TEXT_X,
+  ];
+}
+
+function renderItem(
+  language: ShownLanguage,
+  index: number,
+  textWidthPx: number,
+): string {
   const delay = FIRST_ROW_DELAY_MS + index * ROW_DELAY_STEP_MS;
+  const percent = `${formatPercent(language.percent)}%`;
+  const nameChars =
+    Math.floor(textWidthPx / LANG_CHAR_WIDTH_PX) - percent.length - 1;
+  const name = truncate(language.name, Math.max(1, nameChars));
   return `<g transform="translate(0, ${index * ROW_HEIGHT})">
   <g class="stagger" style="animation-delay: ${delay}ms">
     <circle cx="5" cy="6" r="5" fill="${hex(language.color)}" />
-    <text data-testid="lang-name" x="15" y="10" class="lang-name">${escapeXml(language.name)} ${formatPercent(language.percent)}%</text>
+    <text data-testid="lang-name" x="15" y="10" class="lang-name">${escapeXml(name)} ${percent}</text>
   </g>
 </g>`;
 }
 
-function renderList(languages: ShownLanguage[]): string {
+function renderList(languages: ShownLanguage[], cardWidth: number): string {
+  const widths = columnTextWidths(cardWidth);
   const split = Math.ceil(languages.length / 2);
   const columns = [languages.slice(0, split), languages.slice(split)]
     .filter((column) => column.length > 0)
     .map(
       (column, index) =>
-        `<g transform="translate(${index * COLUMN_X}, 0)">${column.map(renderItem).join("")}</g>`,
+        `<g transform="translate(${index * COLUMN_X}, 0)">${column.map((language, row) => renderItem(language, row, widths[index] ?? 0)).join("")}</g>`,
     );
   return `<g transform="translate(0, 25)">
 ${columns.join("")}
@@ -131,10 +150,7 @@ export function renderTopLangsCard(
   const languages = selectLanguages(snapshot.languages, options);
   const barWidth = options.width - 50;
   const fullTitle = options.title ?? DEFAULT_TITLE;
-  const title = truncate(
-    fullTitle,
-    Math.floor((options.width - 50) / TITLE_CHAR_WIDTH_PX),
-  );
+  const title = truncate(fullTitle, Math.floor(barWidth / TITLE_CHAR_WIDTH_PX));
   const height = 90 + ROW_HEIGHT * Math.ceil(languages.length / 2);
   const list = languages
     .map((language) => `${language.name} ${formatPercent(language.percent)}%`)
@@ -144,7 +160,7 @@ export function renderTopLangsCard(
       ? '<text x="25" y="11" class="stat bold" data-testid="no-languages">No languages found</text>'
       : `<svg data-testid="lang-items" x="25">
 ${renderBar(languages, barWidth)}
-${renderList(languages)}
+${renderList(languages, options.width)}
 </svg>`;
 
   return renderCard({

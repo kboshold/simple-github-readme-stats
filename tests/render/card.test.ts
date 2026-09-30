@@ -65,8 +65,16 @@ describe("renderCard", () => {
     );
     expect(block).toMatch(/animation: none !important;/);
     expect(block).toMatch(/\.stagger \{\s*opacity: 1;\s*\}/);
+    expect(block).not.toContain(".rank-text");
+  });
+
+  it("appends card final-state css inside the reduced-motion block", () => {
+    const svg = renderCard(input({ reducedMotionCss: ".x { opacity: 1; }" }));
+    const block = svg.slice(
+      svg.indexOf("@media (prefers-reduced-motion: reduce)"),
+    );
     expect(block).toMatch(
-      /\.rank-text \{\s*transform: translate\(-5px, 5px\);\s*\}/,
+      /\.stagger \{\s*opacity: 1;\s*\}\s*\.x \{ opacity: 1; \}\s*\}/,
     );
   });
 
