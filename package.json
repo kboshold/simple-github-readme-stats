@@ -15,7 +15,7 @@
     "build": "pnpm data:fetch && pnpm svg:render",
     "dev": "vite",
     "check": "biome check .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p preview",
     "test": "vitest run"
   },
   "dependencies": {
