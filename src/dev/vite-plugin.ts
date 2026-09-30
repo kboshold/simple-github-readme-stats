@@ -1,5 +1,9 @@
 import { existsSync } from "node:fs";
-import type { IncomingMessage, ServerResponse } from "node:http";
+import type {
+  IncomingHttpHeaders,
+  IncomingMessage,
+  ServerResponse,
+} from "node:http";
 import { resolve, sep } from "node:path";
 import type { Plugin, ViteDevServer } from "vite";
 import { z } from "zod";
@@ -75,6 +79,13 @@ const CodedErrorSchema = z.object({
   code: z.string(),
   message: z.string(),
 });
+
+const ALLOWED_FETCH_SITES = new Set(["same-origin", "none"]);
+
+export function isSameOriginRequest(headers: IncomingHttpHeaders): boolean {
+  const site = headers["sec-fetch-site"];
+  return site === undefined || ALLOWED_FETCH_SITES.has(site);
+}
 
 function describeError(error: unknown): string {
   const coded = CodedErrorSchema.safeParse(error);
@@ -229,6 +240,15 @@ export function previewPlugin(env: Record<string, string>): Plugin {
           return true;
         }
         if (req.method === "POST" && pathname === "/api/refresh") {
+          if (!isSameOriginRequest(req.headers)) {
+            sendError(
+              res,
+              403,
+              "ORIGIN_FORBIDDEN",
+              "Refresh is only allowed from the preview page",
+            );
+            return true;
+          }
           await handleRefresh(res);
           return true;
         }

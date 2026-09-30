@@ -2,7 +2,10 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { resolveSnapshot } from "../../src/dev/vite-plugin.ts";
+import {
+  isSameOriginRequest,
+  resolveSnapshot,
+} from "../../src/dev/vite-plugin.ts";
 import type { Snapshot } from "../../src/fetch/snapshot.ts";
 
 function makeSnapshot(fetchedAt: string): Snapshot {
@@ -74,5 +77,19 @@ describe("resolveSnapshot", () => {
     await expect(resolveSnapshot(cachePath, fixturePath)).rejects.toThrow(
       /invalid/,
     );
+  });
+});
+
+describe("isSameOriginRequest", () => {
+  it("allows requests without Sec-Fetch-Site", () => {
+    expect(isSameOriginRequest({})).toBe(true);
+  });
+
+  it.each(["same-origin", "none"])("allows %s", (site) => {
+    expect(isSameOriginRequest({ "sec-fetch-site": site })).toBe(true);
+  });
+
+  it.each(["cross-site", "same-site"])("rejects %s", (site) => {
+    expect(isSameOriginRequest({ "sec-fetch-site": site })).toBe(false);
   });
 });
