@@ -65,6 +65,9 @@ describe("renderCard", () => {
     );
     expect(block).toMatch(/animation: none !important;/);
     expect(block).toMatch(/\.stagger \{\s*opacity: 1;\s*\}/);
+    expect(block).toMatch(
+      /\.rank-text \{\s*transform: translate\(-5px, 5px\);\s*\}/,
+    );
   });
 
   it("uses no scripts or external resources", () => {

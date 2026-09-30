@@ -72,7 +72,7 @@ const ANIMATION_CSS = `/* Animations */
   }
 }`;
 
-// Animated elements keep their final state as base style, so dropping the animation shows it.
+// Contract: card CSS must set final animated values (e.g. ring stroke-dashoffset) as base styles.
 const REDUCED_MOTION_CSS = `@media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
@@ -132,7 +132,9 @@ ${indent(style, 4)}
   />
 
   <g data-testid="card-title" transform="translate(25, 35)">
-    <text x="0" y="0" class="header" data-testid="header">${escapeXml(input.title)}</text>
+    <g transform="translate(0, 0)">
+      <text x="0" y="0" class="header" data-testid="header">${escapeXml(input.title)}</text>
+    </g>
   </g>
 
   <g data-testid="main-card-body" transform="translate(0, 55)">
