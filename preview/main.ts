@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { CARD_NAMES } from "../src/render/card-names.ts";
 
 const StatusSchema = z.object({
   source: z.enum(["cache", "fixture"]),
-  fetchedAt: z.string(),
+  fetchedAt: z.iso.datetime(),
   files: z.array(z.string()),
 });
 
@@ -12,7 +13,6 @@ const ErrorBodySchema = z.object({
 
 type Status = z.infer<typeof StatusSchema>;
 
-const CARD_NAMES = ["top-langs", "stats"];
 const SOURCE_LABELS: Record<Status["source"], string> = {
   cache: "live cache",
   fixture: "fixture",
@@ -37,7 +37,9 @@ const replayButton = requireElement("replay", HTMLButtonElement);
 
 function themeKeyOf(file: string): string {
   const base = file.replace(/\.svg$/, "");
-  const card = CARD_NAMES.find((name) => base.startsWith(`${name}-`));
+  const card = [...CARD_NAMES]
+    .sort((a, b) => b.length - a.length)
+    .find((name) => base.startsWith(`${name}-`));
   if (card !== undefined) {
     return base.slice(card.length + 1);
   }
