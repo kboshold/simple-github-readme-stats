@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "fetchedAt": "2026-01-01T00:00:00.000Z",
+  "user": {
+    "login": "octocat",
+    "name": "Maximilian Alexander Konstantin Bartholomew von Octocatsburg",
+    "followers": 100
+  },
+  "totals": {
+    "stars": 500,
+    "commits": 3000,
+    "prs": 400,
+    "issues": 200,
+    "reviews": 100,
+    "contributedTo": 40
+  },
+  "languages": [
+    {
+      "name": "TypeScript",
+      "color": "3178c6",
+      "bytes": 500000
+    },
+    {
+      "name": "HTML",
+      "color": "e34c26",
+      "bytes": 300000
+    },
+    {
+      "name": "Rust",
+      "color": "dea584",
+      "bytes": 200000
+    },
+    {
+      "name": "Go",
+      "color": "00ADD8",
+      "bytes": 150000
+    },
+    {
+      "name": "Python",
+      "color": "3572A5",
+      "bytes": 100000
+    },
+    {
+      "name": "CSS",
+      "color": "663399",
+      "bytes": 80000
+    },
+    {
+      "name": "Shell",
+      "color": "89e051",
+      "bytes": 50000
+    },
+    {
+      "name": "Lua",
+      "color": "000080",
+      "bytes": 40000
+    },
+    {
+      "name": "Nix",
+      "color": "7e7eff",
+      "bytes": 30000
+    },
+    {
+      "name": "Kotlin",
+      "color": "A97BFF",
+      "bytes": 20000
+    },
+    {
+      "name": "Dockerfile",
+      "color": "384d54",
+      "bytes": 10000
+    }
+  ]
+}

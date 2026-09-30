@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "fetchedAt": "2026-01-01T00:00:00.000Z",
+  "user": {
+    "login": "octocat",
+    "name": "Mona Lisa Octocat",
+    "followers": 0
+  },
+  "totals": {
+    "stars": 0,
+    "commits": 0,
+    "prs": 0,
+    "issues": 0,
+    "reviews": 0,
+    "contributedTo": 0
+  },
+  "languages": []
+}

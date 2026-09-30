@@ -155,9 +155,10 @@ describe("renderStatsCard", () => {
     expect(block).toMatch(
       /\.rank-text \{\s*transform: translate\(-5px, 5px\);\s*\}/,
     );
-    expect(render({ cards: { stats: { hideRank: true } } })).not.toContain(
-      "rank-text {\n      transform",
-    );
+    const hidden = render({ cards: { stats: { hideRank: true } } });
+    expect(
+      hidden.slice(hidden.indexOf("@media (prefers-reduced-motion: reduce)")),
+    ).not.toMatch(/\.rank-text/);
   });
 
   it("uses theme colors", () => {
