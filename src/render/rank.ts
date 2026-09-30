@@ -11,9 +11,6 @@ const THRESHOLDS = [
 ] as const;
 
 export type RankLevel = (typeof THRESHOLDS)[number][1];
-export const RANK_LEVELS: readonly RankLevel[] = THRESHOLDS.map(
-  ([, level]) => level,
-);
 
 export interface RankInput {
   commits: number;

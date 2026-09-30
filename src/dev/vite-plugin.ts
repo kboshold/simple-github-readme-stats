@@ -240,7 +240,13 @@ export function previewPlugin(env: Record<string, string>): Plugin {
       }
 
       async function handleRefresh(res: ServerResponse): Promise<void> {
-        const { requireToken } = await loadEnvModule();
+        let requireToken: typeof EnvModule.requireToken;
+        try {
+          ({ requireToken } = await loadEnvModule());
+        } catch (error) {
+          sendError(res, 500, "FETCH_FAILED", describeError(error));
+          return;
+        }
         let token: string;
         try {
           token = requireToken(env);
