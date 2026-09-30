@@ -87,7 +87,7 @@ describe("renderStatsCard", () => {
     expect(title).toContain("…");
     expect(title.endsWith("&#39;s GitHub Stats")).toBe(true);
     expect(Array.from(title.replace("&#39;", "'")).length).toBeLessThanOrEqual(
-      38,
+      35,
     );
   });
 

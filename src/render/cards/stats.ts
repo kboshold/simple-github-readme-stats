@@ -29,7 +29,7 @@ const VALUE_X_WITH_ICONS = 219.01;
 const VALUE_X_WITHOUT_ICONS = 199.01;
 const RING_RADIUS = 40;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-const TITLE_CHAR_WIDTH_PX = 10;
+const TITLE_CHAR_WIDTH_PX = 11;
 const TITLE_SUFFIX = "'s GitHub Stats";
 
 function buildRows(snapshot: Snapshot, config: Config): StatRow[] {
