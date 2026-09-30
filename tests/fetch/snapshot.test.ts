@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -58,6 +58,16 @@ describe("snapshot", () => {
 
     expect(await readSnapshot(path)).toEqual(snapshot);
     expect(await readFile(path, "utf8")).toMatch(/\n$/);
+  });
+
+  it("replaces the file without leaving temp files behind", async () => {
+    const path = join(directory, "data.json");
+    await writeFile(path, "old");
+
+    await writeSnapshot(path, snapshot);
+
+    expect(await readdir(directory)).toEqual(["data.json"]);
+    expect(await readSnapshot(path)).toEqual(snapshot);
   });
 
   it("throws SNAPSHOT_MISSING when the file does not exist", async () => {

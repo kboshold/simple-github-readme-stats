@@ -1,5 +1,6 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import { z } from "zod";
 import { StatsError } from "../errors.ts";
 
@@ -59,8 +60,16 @@ export async function writeSnapshot(
       `Refusing to write an invalid snapshot: ${describeIssues(parsed.error)}`,
     );
   }
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, `${JSON.stringify(parsed.data, null, 2)}\n`);
+  const dir = dirname(path);
+  const tempPath = join(dir, `.${basename(path)}.${randomUUID()}.tmp`);
+  await mkdir(dir, { recursive: true });
+  try {
+    await writeFile(tempPath, `${JSON.stringify(parsed.data, null, 2)}\n`);
+    await rename(tempPath, path);
+  } catch (error) {
+    await rm(tempPath, { force: true });
+    throw error;
+  }
 }
 
 export async function readSnapshot(path: string): Promise<Snapshot> {

@@ -6,7 +6,7 @@ import {
   isSameOriginRequest,
   resolveSnapshot,
 } from "../../src/dev/vite-plugin.ts";
-import type { Snapshot } from "../../src/fetch/snapshot.ts";
+import { readSnapshot, type Snapshot } from "../../src/fetch/snapshot.ts";
 
 function makeSnapshot(fetchedAt: string): Snapshot {
   return {
@@ -49,34 +49,60 @@ describe("resolveSnapshot", () => {
       cachePath,
       JSON.stringify(makeSnapshot("2026-09-30T12:00:00.000Z")),
     );
-    const result = await resolveSnapshot(cachePath, fixturePath);
+    const result = await resolveSnapshot(cachePath, fixturePath, readSnapshot);
     expect(result.source).toBe("cache");
     expect(result.snapshot.fetchedAt).toBe("2026-09-30T12:00:00.000Z");
   });
 
   it("falls back to the fixture when the cache is missing", async () => {
-    const result = await resolveSnapshot(cachePath, fixturePath);
+    const result = await resolveSnapshot(cachePath, fixturePath, readSnapshot);
     expect(result.source).toBe("fixture");
     expect(result.snapshot.fetchedAt).toBe("2026-01-01T00:00:00.000Z");
   });
 
   it("falls back to the fixture when the cache is not JSON", async () => {
     await writeFile(cachePath, "{ broken");
-    const result = await resolveSnapshot(cachePath, fixturePath);
+    const result = await resolveSnapshot(cachePath, fixturePath, readSnapshot);
     expect(result.source).toBe("fixture");
   });
 
   it("falls back to the fixture when the cache fails the schema", async () => {
     await writeFile(cachePath, JSON.stringify({ schemaVersion: 99 }));
-    const result = await resolveSnapshot(cachePath, fixturePath);
+    const result = await resolveSnapshot(cachePath, fixturePath, readSnapshot);
     expect(result.source).toBe("fixture");
+  });
+
+  it("falls back on a coded error from another StatsError class", async () => {
+    class ForeignStatsError extends Error {
+      readonly code = "SNAPSHOT_MISSING";
+      override name = "StatsError";
+    }
+    const result = await resolveSnapshot(
+      cachePath,
+      fixturePath,
+      async (path) => {
+        if (path === cachePath) {
+          throw new ForeignStatsError("missing");
+        }
+        return readSnapshot(path);
+      },
+    );
+    expect(result.source).toBe("fixture");
+  });
+
+  it("rethrows errors that are not coded", async () => {
+    await expect(
+      resolveSnapshot(cachePath, fixturePath, async () => {
+        throw new Error("disk on fire");
+      }),
+    ).rejects.toThrow("disk on fire");
   });
 
   it("fails when both cache and fixture are unusable", async () => {
     await writeFile(fixturePath, "{}");
-    await expect(resolveSnapshot(cachePath, fixturePath)).rejects.toThrow(
-      /invalid/,
-    );
+    await expect(
+      resolveSnapshot(cachePath, fixturePath, readSnapshot),
+    ).rejects.toThrow(/invalid/);
   });
 });
 

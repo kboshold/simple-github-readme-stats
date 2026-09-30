@@ -53,7 +53,9 @@ const RepoSchema = z.object({
 const ReposResponseSchema = z.object({
   user: z.object({
     repositories: z.object({
-      nodes: z.array(RepoSchema.nullable()),
+      nodes: z
+        .array(RepoSchema.nullable())
+        .transform((nodes) => nodes.filter((node) => node !== null)),
       pageInfo: z.object({
         hasNextPage: z.boolean(),
         endCursor: z.string().nullable(),
@@ -94,9 +96,6 @@ export async function fetchRepos(
     const { nodes, pageInfo } = response.user.repositories;
 
     for (const node of nodes) {
-      if (node === null) {
-        continue;
-      }
       repos.push({
         nameWithOwner: node.nameWithOwner,
         ownerLogin: node.owner.login,
