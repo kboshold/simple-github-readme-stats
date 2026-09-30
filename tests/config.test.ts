@@ -41,6 +41,7 @@ describe("resolveConfig", () => {
           enabled: true,
           width: 320,
           textSize: 11,
+          percentGap: 0,
           count: 8,
           hide: [],
         },
@@ -186,6 +187,25 @@ describe("resolveConfig", () => {
           resolveConfig({ ...minimal, cards: { topLangs: { textSize } } }, {}),
         ).message,
       ).toContain("cards.topLangs.textSize");
+    }
+  });
+
+  it("accepts percentGap from 0 to 40 and rejects other values", () => {
+    for (const percentGap of [0, 40]) {
+      expect(
+        resolveConfig({ ...minimal, cards: { topLangs: { percentGap } } }, {})
+          .cards.topLangs.percentGap,
+      ).toBe(percentGap);
+    }
+    for (const percentGap of [-1, 41, 2.5]) {
+      expect(
+        captureError(() =>
+          resolveConfig(
+            { ...minimal, cards: { topLangs: { percentGap } } },
+            {},
+          ),
+        ).message,
+      ).toContain("cards.topLangs.percentGap");
     }
   });
 

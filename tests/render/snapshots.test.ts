@@ -47,6 +47,7 @@ describe("equal size layout", () => {
           width: 437,
           height: 195,
           textSize: 13,
+          percentGap: 8,
           hide: ["html", "scss", "css"],
         },
       },

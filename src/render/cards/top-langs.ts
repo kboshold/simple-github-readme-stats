@@ -57,6 +57,7 @@ export interface ListLayout {
   listY: number;
   rowHeight: number;
   height: number;
+  percentGap: number;
 }
 
 function scale(textSize: number, base: number): number {
@@ -64,7 +65,8 @@ function scale(textSize: number, base: number): number {
 }
 
 export function listLayout(
-  options: Pick<TopLangsCardOptions, "textSize" | "height">,
+  options: Pick<TopLangsCardOptions, "textSize" | "height"> &
+    Partial<Pick<TopLangsCardOptions, "percentGap">>,
   languageCount: number,
 ): ListLayout {
   const { textSize } = options;
@@ -90,6 +92,7 @@ export function listLayout(
     listY,
     rowHeight,
     height,
+    percentGap: options.percentGap ?? 0,
   };
 }
 
@@ -175,14 +178,19 @@ function renderItem(
 ): string {
   const delay = FIRST_ROW_DELAY_MS + index * ROW_DELAY_STEP_MS;
   const percent = `${formatPercent(language.percent)}%`;
+  const gap = layout.percentGap;
   const nameChars =
-    Math.floor(textWidthPx / layout.charWidth) - percent.length - 1;
-  const name = truncate(language.name, Math.max(1, nameChars));
+    Math.floor((textWidthPx - gap) / layout.charWidth) - percent.length - 1;
+  const name = escapeXml(truncate(language.name, Math.max(1, nameChars)));
+  const label =
+    gap === 0
+      ? `${name} ${percent}`
+      : `${name} <tspan dx="${gap}">${percent}</tspan>`;
   const { dotRadius: r } = layout;
   return `<g transform="translate(0, ${index * layout.rowHeight})">
   <g class="stagger" style="animation-delay: ${delay}ms">
     <circle cx="${r}" cy="${layout.dotY}" r="${r}" fill="${hex(language.color)}" />
-    <text data-testid="lang-name" x="${layout.textX}" y="${layout.textY}" class="lang-name">${escapeXml(name)} ${percent}</text>
+    <text data-testid="lang-name" x="${layout.textX}" y="${layout.textY}" class="lang-name">${label}</text>
   </g>
 </g>`;
 }

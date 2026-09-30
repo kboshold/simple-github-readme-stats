@@ -104,6 +104,7 @@ If you set `themes`, it replaces the defaults. List every theme you want rendere
 | `width` | number | `320` | Width in px, 300 to 600. The second language column moves right as the card gets wider |
 | `height` | number | unset | Minimum height in px, 150 to 400. The card is at least this tall; content stays at the top |
 | `textSize` | number | `11` | Font size of the language list in px, 10 to 16. The dots, the bar and the truncation scale with it. From 14 up, 8 languages need more than 195 px |
+| `percentGap` | number | `0` | Extra space in px between a language name and its percentage, 0 to 40. Long names are cut earlier to make room |
 | `count` | number | `8` | Number of languages shown, 1 to 20 |
 | `hide` | string[] | `[]` | Language names to drop, case-insensitive |
 | `title` | string | `Most Used Languages` | Card title |

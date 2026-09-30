@@ -245,6 +245,35 @@ describe("renderTopLangsCard", () => {
     );
     expect(names(svg)).toEqual(["Microsoft De… 60.00%", "Microsoft D… 40.00%"]);
   });
+  it("omits the tspan without a percent gap", () => {
+    const svg = render(REFERENCE);
+    expect(svg).not.toContain("<tspan");
+    expect(svg).toContain('class="lang-name">TypeScript 54.94%</text>');
+  });
+
+  it("offsets the percentage by the gap", () => {
+    const svg = render(REFERENCE, {
+      cards: { topLangs: { hide: ["html", "scss", "css"], percentGap: 8 } },
+    });
+    expect(svg).toContain(
+      'class="lang-name">TypeScript <tspan dx="8">54.94%</tspan></text>',
+    );
+  });
+
+  it("subtracts the gap from the space for the name", () => {
+    const long = "Microsoft Developer Studio Project";
+    const langs = [
+      { name: long, color: "000000", bytes: 60 },
+      { name: long, color: "000000", bytes: 40 },
+    ];
+    const svg = render(langs, { cards: { topLangs: { percentGap: 12 } } });
+    expect(svg).toContain(
+      'class="lang-name">Microsoft De… <tspan dx="12">60.00%</tspan>',
+    );
+    expect(svg).toContain(
+      'class="lang-name">Microso… <tspan dx="12">40.00%</tspan>',
+    );
+  });
 });
 
 describe("listLayout", () => {
