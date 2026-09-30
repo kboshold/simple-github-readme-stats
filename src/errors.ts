@@ -41,6 +41,9 @@ export async function runCli(main: () => Promise<void>): Promise<void> {
     process.stderr.write(
       `${formatError(error).replaceAll(/\s*\n\s*/g, " ")}\n`,
     );
+    if (!(error instanceof StatsError) && error instanceof Error) {
+      process.stderr.write(`${error.stack ?? ""}\n`);
+    }
     process.exit(1);
   }
 }

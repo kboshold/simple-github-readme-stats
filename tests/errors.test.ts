@@ -57,7 +57,22 @@ describe("runCli", () => {
       }),
     ).rejects.toBeInstanceOf(ExitCalled);
 
-    expect(stderr.mock.calls).toEqual([["error[INTERNAL]: boom\n"]]);
+    expect(stderr.mock.calls[0]).toEqual(["error[INTERNAL]: boom\n"]);
+    expect(stderr.mock.calls).toHaveLength(2);
+    expect(String(stderr.mock.calls[1]?.[0])).toMatch(/^Error: boom\n\s+at /);
+    expect(exit).toHaveBeenCalledWith(1);
+  });
+
+  it("reports a non-Error throw as INTERNAL without a stack", async () => {
+    const { exit, stderr } = spyOnProcess();
+
+    await expect(
+      runCli(async () => {
+        throw "plain string";
+      }),
+    ).rejects.toBeInstanceOf(ExitCalled);
+
+    expect(stderr.mock.calls).toEqual([["error[INTERNAL]: plain string\n"]]);
     expect(exit).toHaveBeenCalledWith(1);
   });
 
