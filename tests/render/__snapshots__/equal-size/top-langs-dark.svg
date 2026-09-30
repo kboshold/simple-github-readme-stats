@@ -47,6 +47,9 @@
       font: 400 13px "Segoe UI", Ubuntu, Sans-Serif;
       fill: #cdd6f4;
     }
+    .lang-sep {
+      fill-opacity: 0.5;
+    }
     .stagger {
       opacity: 0;
       animation: fadeInAnimation 0.3s ease-in-out forwards;
@@ -183,42 +186,42 @@
     <g transform="translate(0, 0)"><g transform="translate(0, 0)">
       <g class="stagger" style="animation-delay: 450ms">
         <circle cx="6" cy="7" r="6" fill="#3178c6" />
-        <text data-testid="lang-name" x="17" y="12" class="lang-name">TypeScript <tspan dx="8">45.87%</tspan></text>
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">TypeScript <tspan dx="5" class="lang-sep">•</tspan> <tspan dx="5">45.87%</tspan></text>
       </g>
     </g><g transform="translate(0, 25)">
       <g class="stagger" style="animation-delay: 600ms">
         <circle cx="6" cy="7" r="6" fill="#dea584" />
-        <text data-testid="lang-name" x="17" y="12" class="lang-name">Rust <tspan dx="8">18.35%</tspan></text>
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Rust <tspan dx="5" class="lang-sep">•</tspan> <tspan dx="5">18.35%</tspan></text>
       </g>
     </g><g transform="translate(0, 50)">
       <g class="stagger" style="animation-delay: 750ms">
         <circle cx="6" cy="7" r="6" fill="#00ADD8" />
-        <text data-testid="lang-name" x="17" y="12" class="lang-name">Go <tspan dx="8">13.76%</tspan></text>
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Go <tspan dx="5" class="lang-sep">•</tspan> <tspan dx="5">13.76%</tspan></text>
       </g>
     </g><g transform="translate(0, 75)">
       <g class="stagger" style="animation-delay: 900ms">
         <circle cx="6" cy="7" r="6" fill="#3572A5" />
-        <text data-testid="lang-name" x="17" y="12" class="lang-name">Python <tspan dx="8">9.17%</tspan></text>
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Python <tspan dx="5" class="lang-sep">•</tspan> <tspan dx="5">9.17%</tspan></text>
       </g>
     </g></g><g transform="translate(194, 0)"><g transform="translate(0, 0)">
       <g class="stagger" style="animation-delay: 450ms">
         <circle cx="6" cy="7" r="6" fill="#89e051" />
-        <text data-testid="lang-name" x="17" y="12" class="lang-name">Shell <tspan dx="8">4.59%</tspan></text>
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Shell <tspan dx="5" class="lang-sep">•</tspan> <tspan dx="5">4.59%</tspan></text>
       </g>
     </g><g transform="translate(0, 25)">
       <g class="stagger" style="animation-delay: 600ms">
         <circle cx="6" cy="7" r="6" fill="#000080" />
-        <text data-testid="lang-name" x="17" y="12" class="lang-name">Lua <tspan dx="8">3.67%</tspan></text>
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Lua <tspan dx="5" class="lang-sep">•</tspan> <tspan dx="5">3.67%</tspan></text>
       </g>
     </g><g transform="translate(0, 50)">
       <g class="stagger" style="animation-delay: 750ms">
         <circle cx="6" cy="7" r="6" fill="#7e7eff" />
-        <text data-testid="lang-name" x="17" y="12" class="lang-name">Nix <tspan dx="8">2.75%</tspan></text>
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Nix <tspan dx="5" class="lang-sep">•</tspan> <tspan dx="5">2.75%</tspan></text>
       </g>
     </g><g transform="translate(0, 75)">
       <g class="stagger" style="animation-delay: 900ms">
         <circle cx="6" cy="7" r="6" fill="#A97BFF" />
-        <text data-testid="lang-name" x="17" y="12" class="lang-name">Kotlin <tspan dx="8">1.83%</tspan></text>
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Kotlin <tspan dx="5" class="lang-sep">•</tspan> <tspan dx="5">1.83%</tspan></text>
       </g>
     </g></g>
     </g>

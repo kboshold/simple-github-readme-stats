@@ -275,6 +275,52 @@ describe("renderTopLangsCard", () => {
       'class="lang-name">Microso… <tspan dx="12">40.00%</tspan>',
     );
   });
+
+  it("keeps the gap-only output without a separator", () => {
+    const svg = render(REFERENCE, {
+      cards: { topLangs: { hide: ["html", "scss", "css"], percentGap: 8 } },
+    });
+    expect(svg).not.toContain("lang-sep");
+    expect(svg).toContain(
+      'class="lang-name">TypeScript <tspan dx="8">54.94%</tspan></text>',
+    );
+  });
+
+  it("centers the separator in the gap", () => {
+    const svg = render(REFERENCE, {
+      cards: {
+        topLangs: {
+          hide: ["html", "scss", "css"],
+          percentGap: 10,
+          percentSeparator: "•",
+        },
+      },
+    });
+    expect(svg).toContain(
+      'class="lang-name">TypeScript <tspan dx="5" class="lang-sep">•</tspan> <tspan dx="5">54.94%</tspan></text>',
+    );
+    expect(svg).toMatch(/\.lang-sep \{\s*fill-opacity: 0\.5;\s*\}/);
+  });
+
+  it("escapes the separator", () => {
+    const svg = render(REFERENCE, {
+      cards: { topLangs: { percentSeparator: "<&" } },
+    });
+    expect(svg).toContain('class="lang-sep">&lt;&amp;</tspan>');
+  });
+
+  it("leaves room for the separator when truncating", () => {
+    const long = "Microsoft Developer Studio Project";
+    const svg = render(
+      [
+        { name: long, color: "000000", bytes: 60 },
+        { name: long, color: "000000", bytes: 40 },
+      ],
+      { cards: { topLangs: { percentGap: 12, percentSeparator: "•" } } },
+    );
+    expect(svg).toContain('class="lang-name">Microsoft … <tspan');
+    expect(svg).toContain('class="lang-name">Micro… <tspan');
+  });
 });
 
 describe("listLayout", () => {

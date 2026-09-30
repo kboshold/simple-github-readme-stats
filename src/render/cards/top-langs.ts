@@ -21,6 +21,7 @@ const BASE_LIST_Y = 25;
 const BASE_BAR_HEIGHT = 8;
 const BASE_TEXT_SIZE = 11;
 const CHROME_HEIGHT = 90;
+const SEPARATOR_OPACITY = 0.5;
 const MIN_COLUMN_X = 150;
 const FIRST_ROW_DELAY_MS = 450;
 const ROW_DELAY_STEP_MS = 150;
@@ -95,7 +96,12 @@ export function listLayout(
   };
 }
 
-function css(theme: Theme, barWidth: number, textSize: number): string {
+function css(
+  theme: Theme,
+  barWidth: number,
+  textSize: number,
+  separator: string,
+): string {
   return `@keyframes slideInAnimation {
   from {
     width: 0;
@@ -117,7 +123,14 @@ ${BOLD_CSS}
 .lang-name {
   font: 400 ${textSize}px "Segoe UI", Ubuntu, Sans-Serif;
   fill: ${hex(theme.text)};
-}
+}${
+    separator === ""
+      ? ""
+      : `
+.lang-sep {
+  fill-opacity: ${SEPARATOR_OPACITY};
+}`
+  }
 ${STAGGER_CSS}
 #rect-mask rect{
   animation: slideInAnimation 1s ease-in-out forwards;
@@ -174,17 +187,24 @@ function renderItem(
   index: number,
   textWidthPx: number,
   layout: ListLayout,
+  separator: string,
 ): string {
   const delay = FIRST_ROW_DELAY_MS + index * ROW_DELAY_STEP_MS;
   const percent = `${formatPercent(language.percent)}%`;
   const gap = layout.percentGap;
+  const separatorChars = separator === "" ? 0 : [...separator].length + 1;
   const nameChars =
-    Math.floor((textWidthPx - gap) / layout.charWidth) - percent.length - 1;
+    Math.floor((textWidthPx - gap) / layout.charWidth) -
+    percent.length -
+    1 -
+    separatorChars;
   const name = escapeXml(truncate(language.name, Math.max(1, nameChars)));
   const label =
-    gap === 0
-      ? `${name} ${percent}`
-      : `${name} <tspan dx="${gap}">${percent}</tspan>`;
+    separator !== ""
+      ? `${name} <tspan dx="${gap / 2}" class="lang-sep">${escapeXml(separator)}</tspan> <tspan dx="${gap / 2}">${percent}</tspan>`
+      : gap === 0
+        ? `${name} ${percent}`
+        : `${name} <tspan dx="${gap}">${percent}</tspan>`;
   const { dotRadius: r } = layout;
   return `<g transform="translate(0, ${index * layout.rowHeight})">
   <g class="stagger" style="animation-delay: ${delay}ms">
@@ -198,6 +218,7 @@ function renderList(
   languages: ShownLanguage[],
   cardWidth: number,
   layout: ListLayout,
+  separator: string,
 ): string {
   const widths = columnTextWidths(cardWidth, layout.textX);
   const offset = columnOffset(cardWidth);
@@ -206,7 +227,7 @@ function renderList(
     .filter((column) => column.length > 0)
     .map(
       (column, index) =>
-        `<g transform="translate(${index * offset}, 0)">${column.map((language, row) => renderItem(language, row, widths[index] ?? 0, layout)).join("")}</g>`,
+        `<g transform="translate(${index * offset}, 0)">${column.map((language, row) => renderItem(language, row, widths[index] ?? 0, layout, separator)).join("")}</g>`,
     );
   return `<g transform="translate(0, ${layout.listY})">
 ${columns.join("")}
@@ -232,7 +253,7 @@ export function renderTopLangsCard(
       ? '<text x="25" y="11" class="stat bold" data-testid="no-languages">No languages found</text>'
       : `<svg data-testid="lang-items" x="25">
 ${renderBar(languages, barWidth, layout)}
-${renderList(languages, options.width, layout)}
+${renderList(languages, options.width, layout, options.percentSeparator)}
 </svg>`;
 
   return renderCard({
@@ -242,7 +263,7 @@ ${renderList(languages, options.width, layout)}
     a11yTitle: fullTitle,
     a11yDesc: languages.length === 0 ? "No languages found" : list,
     theme,
-    css: css(theme, barWidth, layout.textSize),
+    css: css(theme, barWidth, layout.textSize, options.percentSeparator),
     body,
   });
 }

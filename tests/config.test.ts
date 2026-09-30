@@ -42,6 +42,7 @@ describe("resolveConfig", () => {
           width: 320,
           textSize: 11,
           percentGap: 0,
+          percentSeparator: "",
           count: 8,
           hide: [],
         },
@@ -207,6 +208,25 @@ describe("resolveConfig", () => {
         ).message,
       ).toContain("cards.topLangs.percentGap");
     }
+  });
+
+  it("accepts a percentSeparator of up to 3 characters", () => {
+    for (const percentSeparator of ["", "•", "···"]) {
+      expect(
+        resolveConfig(
+          { ...minimal, cards: { topLangs: { percentSeparator } } },
+          {},
+        ).cards.topLangs.percentSeparator,
+      ).toBe(percentSeparator);
+    }
+    expect(
+      captureError(() =>
+        resolveConfig(
+          { ...minimal, cards: { topLangs: { percentSeparator: "----" } } },
+          {},
+        ),
+      ).message,
+    ).toContain("cards.topLangs.percentSeparator");
   });
 
   it("merges env lists, de-duplicated case-insensitively", () => {

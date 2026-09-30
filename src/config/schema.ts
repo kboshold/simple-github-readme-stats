@@ -56,6 +56,10 @@ export const TopLangsCardOptionsSchema = z.object({
   height: minHeight,
   textSize: z.number().int().min(10).max(16).default(11),
   percentGap: z.number().int().min(0).max(40).default(0),
+  percentSeparator: z
+    .string()
+    .refine((value) => [...value].length <= 3, "must be at most 3 characters")
+    .default(""),
   count: z.number().int().min(1).max(20).default(8),
   hide: z.array(z.string()).default([]),
   title: z.string().optional(),
