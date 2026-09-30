@@ -1,6 +1,6 @@
 # simple-github-readme-stats
 
-A GitHub Action that renders your GitHub stats and top languages as SVG cards and uploads them to a Gist every hour. Your profile README loads the images straight from the Gist, so no server is needed.
+A GitHub Actions workflow that renders your GitHub stats and top languages as SVG cards and uploads them to a Gist every hour. Your profile README loads the images straight from the Gist, so no server is needed.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://gist.githubusercontent.com/kboshold/ab2d9bf8ae29c3f61f892b67fb3282a2/raw/stats-dark.svg">
@@ -173,7 +173,7 @@ Other commands:
 
 - Repository and organization names are never written to `.cache/data.json`, `dist/`, the logs or the Gist. Only totals and language sums are stored.
 - `orgs` and `excludeRepos` in `stats.config.ts` are public in your fork. Organization logins you don't want to show go into the `STATS_ORGS` secret instead, as a comma-separated list. Private repositories to leave out go into `STATS_EXCLUDE_REPOS` as comma-separated `owner/name` entries. Both are merged with the config values. Locally, put them in `.env`.
-- The totals still show roughly how much private work you do. That is on purpose, but keep it in mind before you publish the cards.
+- The totals still show roughly how much private work you do. That is on purpose. Check that you are fine with it before you publish the cards.
 - The workflow has no `pull_request` trigger, so code from other people's pull requests never runs with your token.
 
 ## Limits
