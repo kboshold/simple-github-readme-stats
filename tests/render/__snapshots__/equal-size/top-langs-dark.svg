@@ -44,7 +44,7 @@
     }
     .bold { font-weight: 700 }
     .lang-name {
-      font: 400 11px "Segoe UI", Ubuntu, Sans-Serif;
+      font: 400 13px "Segoe UI", Ubuntu, Sans-Serif;
       fill: #cdd6f4;
     }
     .stagger {
@@ -105,7 +105,7 @@
   <g data-testid="main-card-body" transform="translate(0, 55)">
     <svg data-testid="lang-items" x="25">
     <mask id="rect-mask">
-      <rect x="0" y="0" width="387" height="8" fill="white" rx="5"/>
+      <rect x="0" y="0" width="387" height="9" fill="white" rx="6"/>
     </mask>
     <rect
       mask="url(#rect-mask)"
@@ -113,7 +113,7 @@
       x="0"
       y="0"
       width="177.52"
-      height="8"
+      height="9"
       fill="#3178c6"
     />
     <rect
@@ -122,7 +122,7 @@
       x="177.52"
       y="0"
       width="71.01"
-      height="8"
+      height="9"
       fill="#dea584"
     />
     <rect
@@ -131,7 +131,7 @@
       x="248.53000000000003"
       y="0"
       width="53.26"
-      height="8"
+      height="9"
       fill="#00ADD8"
     />
     <rect
@@ -140,7 +140,7 @@
       x="301.79"
       y="0"
       width="35.5"
-      height="8"
+      height="9"
       fill="#3572A5"
     />
     <rect
@@ -149,7 +149,7 @@
       x="337.29"
       y="0"
       width="17.75"
-      height="8"
+      height="9"
       fill="#89e051"
     />
     <rect
@@ -158,7 +158,7 @@
       x="355.04"
       y="0"
       width="14.2"
-      height="8"
+      height="9"
       fill="#000080"
     />
     <rect
@@ -167,7 +167,7 @@
       x="369.24"
       y="0"
       width="10.65"
-      height="8"
+      height="9"
       fill="#7e7eff"
     />
     <rect
@@ -176,49 +176,49 @@
       x="379.89"
       y="0"
       width="17.1"
-      height="8"
+      height="9"
       fill="#A97BFF"
     />
-    <g transform="translate(0, 25)">
+    <g transform="translate(0, 28)">
     <g transform="translate(0, 0)"><g transform="translate(0, 0)">
       <g class="stagger" style="animation-delay: 450ms">
-        <circle cx="5" cy="6" r="5" fill="#3178c6" />
-        <text data-testid="lang-name" x="15" y="10" class="lang-name">TypeScript 45.87%</text>
+        <circle cx="6" cy="7" r="6" fill="#3178c6" />
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">TypeScript 45.87%</text>
       </g>
     </g><g transform="translate(0, 25)">
       <g class="stagger" style="animation-delay: 600ms">
-        <circle cx="5" cy="6" r="5" fill="#dea584" />
-        <text data-testid="lang-name" x="15" y="10" class="lang-name">Rust 18.35%</text>
+        <circle cx="6" cy="7" r="6" fill="#dea584" />
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Rust 18.35%</text>
       </g>
     </g><g transform="translate(0, 50)">
       <g class="stagger" style="animation-delay: 750ms">
-        <circle cx="5" cy="6" r="5" fill="#00ADD8" />
-        <text data-testid="lang-name" x="15" y="10" class="lang-name">Go 13.76%</text>
+        <circle cx="6" cy="7" r="6" fill="#00ADD8" />
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Go 13.76%</text>
       </g>
     </g><g transform="translate(0, 75)">
       <g class="stagger" style="animation-delay: 900ms">
-        <circle cx="5" cy="6" r="5" fill="#3572A5" />
-        <text data-testid="lang-name" x="15" y="10" class="lang-name">Python 9.17%</text>
+        <circle cx="6" cy="7" r="6" fill="#3572A5" />
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Python 9.17%</text>
       </g>
     </g></g><g transform="translate(194, 0)"><g transform="translate(0, 0)">
       <g class="stagger" style="animation-delay: 450ms">
-        <circle cx="5" cy="6" r="5" fill="#89e051" />
-        <text data-testid="lang-name" x="15" y="10" class="lang-name">Shell 4.59%</text>
+        <circle cx="6" cy="7" r="6" fill="#89e051" />
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Shell 4.59%</text>
       </g>
     </g><g transform="translate(0, 25)">
       <g class="stagger" style="animation-delay: 600ms">
-        <circle cx="5" cy="6" r="5" fill="#000080" />
-        <text data-testid="lang-name" x="15" y="10" class="lang-name">Lua 3.67%</text>
+        <circle cx="6" cy="7" r="6" fill="#000080" />
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Lua 3.67%</text>
       </g>
     </g><g transform="translate(0, 50)">
       <g class="stagger" style="animation-delay: 750ms">
-        <circle cx="5" cy="6" r="5" fill="#7e7eff" />
-        <text data-testid="lang-name" x="15" y="10" class="lang-name">Nix 2.75%</text>
+        <circle cx="6" cy="7" r="6" fill="#7e7eff" />
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Nix 2.75%</text>
       </g>
     </g><g transform="translate(0, 75)">
       <g class="stagger" style="animation-delay: 900ms">
-        <circle cx="5" cy="6" r="5" fill="#A97BFF" />
-        <text data-testid="lang-name" x="15" y="10" class="lang-name">Kotlin 1.83%</text>
+        <circle cx="6" cy="7" r="6" fill="#A97BFF" />
+        <text data-testid="lang-name" x="17" y="12" class="lang-name">Kotlin 1.83%</text>
       </g>
     </g></g>
     </g>

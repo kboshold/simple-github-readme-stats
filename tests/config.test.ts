@@ -37,7 +37,13 @@ describe("resolveConfig", () => {
           hide: [],
           hideRank: false,
         },
-        topLangs: { enabled: true, width: 320, count: 8, hide: [] },
+        topLangs: {
+          enabled: true,
+          width: 320,
+          textSize: 11,
+          count: 8,
+          hide: [],
+        },
       },
     });
   });
@@ -165,6 +171,22 @@ describe("resolveConfig", () => {
         ),
       ).message,
     ).toContain("cards.topLangs.height");
+  });
+
+  it("accepts textSize from 10 to 16 and rejects other values", () => {
+    for (const textSize of [10, 16]) {
+      expect(
+        resolveConfig({ ...minimal, cards: { topLangs: { textSize } } }, {})
+          .cards.topLangs.textSize,
+      ).toBe(textSize);
+    }
+    for (const textSize of [9, 17, 12.5]) {
+      expect(
+        captureError(() =>
+          resolveConfig({ ...minimal, cards: { topLangs: { textSize } } }, {}),
+        ).message,
+      ).toContain("cards.topLangs.textSize");
+    }
   });
 
   it("merges env lists, de-duplicated case-insensitively", () => {

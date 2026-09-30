@@ -54,6 +54,7 @@ export const TopLangsCardOptionsSchema = z.object({
   enabled: z.boolean().default(true),
   width: width.default(320),
   height: minHeight,
+  textSize: z.number().int().min(10).max(16).default(11),
   count: z.number().int().min(1).max(20).default(8),
   hide: z.array(z.string()).default([]),
   title: z.string().optional(),

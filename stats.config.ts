@@ -10,6 +10,7 @@ export default defineConfig({
     topLangs: {
       width: 437,
       height: 195,
+      textSize: 13,
       hide: ["html", "scss", "css"],
     },
   },

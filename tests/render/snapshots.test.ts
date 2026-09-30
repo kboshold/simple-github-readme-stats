@@ -43,7 +43,12 @@ describe("equal size layout", () => {
       themes: { dark: config.themes.dark },
       cards: {
         stats: { enabled: false },
-        topLangs: { width: 437, height: 195, hide: ["html", "scss", "css"] },
+        topLangs: {
+          width: 437,
+          height: 195,
+          textSize: 13,
+          hide: ["html", "scss", "css"],
+        },
       },
     });
     const [file] = renderAll(snapshot, equal);
