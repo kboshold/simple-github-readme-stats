@@ -4,7 +4,7 @@ export default defineConfig({
   username: "kboshold",
   orgs: [],
   gist: {
-    id: "00000000000000000000000000000000",
+    id: "ab2d9bf8ae29c3f61f892b67fb3282a2",
   },
   cards: {
     topLangs: {
