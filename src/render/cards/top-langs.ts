@@ -65,8 +65,7 @@ function scale(textSize: number, base: number): number {
 }
 
 export function listLayout(
-  options: Pick<TopLangsCardOptions, "textSize" | "height"> &
-    Partial<Pick<TopLangsCardOptions, "percentGap">>,
+  options: Pick<TopLangsCardOptions, "textSize" | "height" | "percentGap">,
   languageCount: number,
 ): ListLayout {
   const { textSize } = options;
@@ -92,7 +91,7 @@ export function listLayout(
     listY,
     rowHeight,
     height,
-    percentGap: options.percentGap ?? 0,
+    percentGap: options.percentGap,
   };
 }
 

@@ -245,6 +245,7 @@ describe("renderTopLangsCard", () => {
     );
     expect(names(svg)).toEqual(["Microsoft De… 60.00%", "Microsoft D… 40.00%"]);
   });
+
   it("omits the tspan without a percent gap", () => {
     const svg = render(REFERENCE);
     expect(svg).not.toContain("<tspan");
@@ -278,27 +279,33 @@ describe("renderTopLangsCard", () => {
 
 describe("listLayout", () => {
   it("keeps 25px rows at the computed height", () => {
-    expect(listLayout({ textSize: 11 }, 8)).toMatchObject({
+    expect(listLayout({ textSize: 11, percentGap: 0 }, 8)).toMatchObject({
       rowHeight: 25,
       listY: 25,
       height: 190,
     });
-    expect(listLayout({ textSize: 11 }, 0)).toMatchObject({
+    expect(listLayout({ textSize: 11, percentGap: 0 }, 0)).toMatchObject({
       rowHeight: 25,
       height: 90,
     });
   });
 
   it("spreads rows over a larger minimum height", () => {
-    expect(listLayout({ textSize: 11, height: 195 }, 8)).toMatchObject({
+    expect(
+      listLayout({ textSize: 11, height: 195, percentGap: 0 }, 8),
+    ).toMatchObject({
       rowHeight: 26,
       height: 195,
     });
-    expect(listLayout({ textSize: 11, height: 300 }, 7)).toMatchObject({
+    expect(
+      listLayout({ textSize: 11, height: 300, percentGap: 0 }, 7),
+    ).toMatchObject({
       rowHeight: 52,
       height: 300,
     });
-    expect(listLayout({ textSize: 13, height: 195 }, 8)).toMatchObject({
+    expect(
+      listLayout({ textSize: 13, height: 195, percentGap: 0 }, 8),
+    ).toMatchObject({
       rowHeight: 25,
       listY: 28,
       height: 195,
@@ -306,6 +313,8 @@ describe("listLayout", () => {
   });
 
   it("never lets rows shrink below 25px", () => {
-    expect(listLayout({ textSize: 11, height: 150 }, 10).rowHeight).toBe(25);
+    expect(
+      listLayout({ textSize: 11, height: 150, percentGap: 0 }, 10).rowHeight,
+    ).toBe(25);
   });
 });
