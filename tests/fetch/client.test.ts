@@ -1,3 +1,4 @@
+import { inspect } from "node:util";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createClient } from "../../src/fetch/client.ts";
@@ -92,7 +93,9 @@ describe("createClient", () => {
     const error = await captureError(client.query("query", {}, schema));
 
     expect(error.code).toBe("TOKEN_UNAUTHORIZED");
-    expect(error.message).not.toContain("secret-token");
+    expect(inspect(error, { depth: null, showHidden: true })).not.toContain(
+      "secret-token",
+    );
     expect(sleeps).toEqual([]);
   });
 

@@ -97,7 +97,7 @@ function classifyRawError(error: unknown): Failure {
       : fatal(failure);
   }
   const message = error instanceof Error ? error.message : String(error);
-  return retryable(networkError(message, error));
+  return retryable(networkError(message));
 }
 
 export async function pushToGist(options: PushOptions): Promise<string[]> {
