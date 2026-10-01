@@ -49,13 +49,14 @@ export function isTransientStatus(status: number): boolean {
   return status === 502 || status === 503;
 }
 
-export function networkError(message: string, cause?: unknown): StatsError {
-  return new StatsError("API_ERROR", `Network error: ${message}`, { cause });
+// Raw client errors stay out of `cause`; they can carry request headers.
+export function networkError(message: string): StatsError {
+  return new StatsError("API_ERROR", `Network error: ${message}`);
 }
 
 export function unknownFailure(error: unknown): Failure {
   const message = error instanceof Error ? error.message : String(error);
-  return fatal(new StatsError("API_ERROR", message, { cause: error }));
+  return fatal(new StatsError("API_ERROR", message));
 }
 
 function classifyGraphqlError(error: GraphqlResponseError<unknown>): Failure {

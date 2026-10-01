@@ -1,3 +1,4 @@
+import { inspect } from "node:util";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { pushToGist } from "../../src/publish/gist.ts";
@@ -238,6 +239,8 @@ describe("pushToGist", () => {
     const ctx = setup([() => json(500, { message: "boom" })]);
 
     const error = await captureError(run(ctx));
-    expect(error.message).not.toContain("secret-token");
+    expect(inspect(error, { depth: null, showHidden: true })).not.toContain(
+      "secret-token",
+    );
   });
 });
