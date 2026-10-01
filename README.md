@@ -1,6 +1,6 @@
 # simple-github-readme-stats
 
-A GitHub Actions workflow that renders your GitHub stats and top languages as SVG cards and uploads them to a Gist every three hours. Your profile README loads the images straight from the Gist, so no server is needed.
+A GitHub Actions workflow that renders your GitHub stats and top languages as SVG cards and uploads them to a Gist every three hours. Your profile README loads the images from the Gist, so there is no server to run.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://gist.githubusercontent.com/kboshold/ab2d9bf8ae29c3f61f892b67fb3282a2/raw/stats-dark.svg">
@@ -13,30 +13,36 @@ A GitHub Actions workflow that renders your GitHub stats and top languages as SV
 
 The cards follow the look of [github-readme-stats](https://github.com/anuraghazra/github-readme-stats), with a rank ring and a short load animation. Because the token belongs to you, private repositories and private contributions are counted too.
 
-## How it works
+## Setup with an agent
 
-The workflow `.github/workflows/update.yml` runs every three hours at minute 42 (00:42, 03:42, ..., 21:42 UTC), and you can also start it by hand. It runs three steps:
+Paste this into a coding agent that can run `gh` (Claude Code, Codex, Cursor and so on):
 
-1. `pnpm data:fetch` asks the GitHub GraphQL API for your totals and languages and writes them to `.cache/data.json`.
-2. `pnpm svg:render` turns that file into one SVG per card and theme in `dist/`: `stats-dark.svg`, `stats-light.svg`, `top-langs-dark.svg` and `top-langs-light.svg`.
-3. `pnpm gist:push` compares `dist/` with the Gist and uploads only the files that changed. Other files in the Gist are left alone.
+```text
+Set up GitHub readme stats cards for me by following
+https://raw.githubusercontent.com/kboshold/simple-github-readme-stats/main/SETUP.md
+```
 
-A last step runs `gh workflow enable update.yml` with the workflow's own token. GitHub turns off scheduled workflows after 60 days without repository activity, and this keeps the schedule alive.
+The agent forks the repo, creates the Gist, edits the config, runs the workflow and gives you the embed snippet. You only create the token and store it as a secret, so it never goes through the agent.
 
-`pnpm build` runs the fetch and render steps locally.
-
-## Setup
+## Manual setup
 
 1. Fork this repository.
-2. Create a secret Gist at <https://gist.github.com>. Add any placeholder file, since a Gist can't be empty. Copy the Gist ID from the URL (the hex string after your user name).
-3. Create a personal access token (classic) at <https://github.com/settings/tokens> with these scopes: `read:user`, `repo`, `read:org`, `gist`. See [Token scopes](#token-scopes).
-4. If an organization you want counted uses SAML SSO, open the token's "Configure SSO" menu and authorize it for that organization.
-5. In your fork, open Settings > Secrets and variables > Actions and add the token as the repository secret `STATS_TOKEN`. Optionally add `STATS_ORGS` and `STATS_EXCLUDE_REPOS` (see [Privacy](#privacy)).
-6. Edit `stats.config.ts`: set `username` and `gist.id`, and add `orgs` or theme and card options if you want them. See [Configuration](#configuration).
-7. Open the Actions tab, enable workflows for the fork if GitHub asks, then run "Update stats" with "Run workflow".
-8. Add the [embed snippet](#embed) to your profile README, using your user name and Gist ID.
+2. Create a secret Gist at <https://gist.github.com> with any placeholder file (a Gist can't be empty). The Gist ID is the hex string at the end of its URL.
+3. Create a personal access token (classic) with the scopes `read:user`, `repo`, `read:org` and `gist`: <https://github.com/settings/tokens/new?scopes=read:user,repo,read:org,gist&description=readme-stats>. If an organization you want counted uses SAML SSO, authorize the token for it under "Configure SSO".
+4. In the fork, add the token as the Actions secret `STATS_TOKEN` (Settings > Secrets and variables > Actions). `STATS_ORGS` and `STATS_EXCLUDE_REPOS` are optional, see [Privacy](#privacy).
+5. In `stats.config.ts`, set `username` and `gist.id`. See [Configuration](#configuration) for the rest.
+6. In the Actions tab, enable workflows, then run "Update stats". When it is green, the four SVGs are in the Gist and you can delete the placeholder file.
+7. Add the [embed snippet](#embed) to your profile README.
 
-The placeholder file from step 2 stays in the Gist. You can delete it once the SVGs are there.
+## How it works
+
+`.github/workflows/update.yml` runs every three hours at minute 42 UTC, or by hand:
+
+1. `pnpm data:fetch` reads your totals and languages from the GitHub GraphQL API into `.cache/data.json`.
+2. `pnpm svg:render` writes `stats-{theme}.svg` and `top-langs-{theme}.svg` to `dist/`.
+3. `pnpm gist:push` uploads only the files that changed and leaves other Gist files alone.
+
+The last step runs `gh workflow enable update.yml`, because GitHub turns off scheduled workflows after 60 days without repository activity.
 
 ## Configuration
 
@@ -190,10 +196,3 @@ Other commands:
 - Every repository of an organization in `orgs` or `STATS_ORGS` that your token can read counts for stars and languages, even ones you never touched. Forks are left out of languages but count for stars. Use `excludeRepos` to drop repositories.
 - When the token expires, runs fail with `error[TOKEN_UNAUTHORIZED]` and the cards stop updating. Create a new token and update `STATS_TOKEN`.
 - Text width is not measured exactly. Very long display names or language names can overflow the card.
-
-## Manual check after setup
-
-- [ ] Run "Update stats" from the Actions tab and wait for a green run.
-- [ ] Open the four raw URLs (`stats-dark.svg`, `stats-light.svg`, `top-langs-dark.svg`, `top-langs-light.svg`) in a browser. Each shows a card and plays its animation.
-- [ ] Open your profile README in light mode and in dark mode. Each mode shows the matching cards.
-- [ ] Run the workflow again. The push step prints `up to date` if nothing changed.
