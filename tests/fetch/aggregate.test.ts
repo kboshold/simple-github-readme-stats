@@ -165,7 +165,7 @@ describe("aggregateRepos", () => {
 });
 
 describe("estimateCommits", () => {
-  it("matches the reference values", () => {
+  it("estimates private commits from restricted contributions", () => {
     expect(estimateCommits(inputs(), { prs: 754, issues: 290 })).toBe(10240);
   });
 
@@ -184,19 +184,16 @@ describe("estimateCommits", () => {
     );
   });
 
-  it("clamps negative private PR and issue counts to zero", () => {
-    const visibleOnly = inputs({
-      restricted: 100,
-      prContributions: 900,
-      issueContributions: 900,
-    });
-
-    expect(estimateCommits(visibleOnly, { prs: 754, issues: 290 })).toBe(3163);
-  });
-
-  it("clamps the private commit estimate to zero", () => {
-    expect(
-      estimateCommits(inputs({ restricted: 50 }), { prs: 754, issues: 290 }),
-    ).toBe(3063);
+  it.each([
+    [
+      "private PR and issue counts",
+      { restricted: 100, prContributions: 900, issueContributions: 900 },
+      3163,
+    ],
+    ["the private commit estimate", { restricted: 50 }, 3063],
+  ])("clamps %s to zero", (_, overrides, expected) => {
+    expect(estimateCommits(inputs(overrides), { prs: 754, issues: 290 })).toBe(
+      expected,
+    );
   });
 });

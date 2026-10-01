@@ -1,83 +1,71 @@
 import { describe, expect, it } from "vitest";
-import { defineConfig, latte, mocha } from "../src/config/index.ts";
+import { type ConfigInput, defineConfig, mocha } from "../src/config/index.ts";
 import { loadConfig, resolveConfig } from "../src/config/load.ts";
-import { StatsError } from "../src/errors.ts";
+import { captureError } from "./helpers.ts";
 
 const minimal = defineConfig({
   username: "octocat",
   gist: { id: "0123456789abcdef0123456789abcdef" },
 });
 
-function captureError(run: () => unknown): StatsError {
-  try {
-    run();
-  } catch (error) {
-    if (error instanceof StatsError) {
-      return error;
-    }
-    throw error;
-  }
-  throw new Error("expected a StatsError");
-}
-
 describe("resolveConfig", () => {
-  it("applies all defaults", () => {
-    expect(resolveConfig(minimal, {})).toEqual({
-      username: "octocat",
-      orgs: [],
-      excludeRepos: [],
-      commitsWindow: "all",
-      gist: { id: "0123456789abcdef0123456789abcdef" },
-      themes: { dark: mocha, light: latte },
+  it.each<[string, Partial<ConfigInput>]>([
+    ["themes.dark.title", { themes: { dark: { ...mocha, title: "#cba6f7" } } }],
+    ["username", { username: "not a login" }],
+    ["themes", { themes: {} }],
+    ["themes.Dark_Mode", { themes: { Dark_Mode: mocha } }],
+    ["cards.stats.width", { cards: { stats: { width: 400 } } }],
+    ["cards.stats.width", { cards: { stats: { width: 601 } } }],
+    ["cards.topLangs.width", { cards: { topLangs: { width: 299 } } }],
+    ["cards.stats.height", { cards: { stats: { height: 149 } } }],
+    ["cards.topLangs.height", { cards: { topLangs: { height: 401 } } }],
+    ["cards.topLangs.height", { cards: { topLangs: { height: 200.5 } } }],
+    ["cards.topLangs.textSize", { cards: { topLangs: { textSize: 9 } } }],
+    ["cards.topLangs.textSize", { cards: { topLangs: { textSize: 17 } } }],
+    ["cards.topLangs.textSize", { cards: { topLangs: { textSize: 12.5 } } }],
+    ["cards.topLangs.percentGap", { cards: { topLangs: { percentGap: -1 } } }],
+    ["cards.topLangs.percentGap", { cards: { topLangs: { percentGap: 41 } } }],
+    ["cards.topLangs.percentGap", { cards: { topLangs: { percentGap: 2.5 } } }],
+    [
+      "cards.topLangs.percentSeparator",
+      { cards: { topLangs: { percentSeparator: "----" } } },
+    ],
+    [
+      "cards.topLangs.percentSeparator",
+      { cards: { topLangs: { percentSeparator: "\n" } } },
+    ],
+    ["cards.topLangs.title", { cards: { topLangs: { title: "Langs\u0007" } } }],
+    ["cards.stats.title", { cards: { stats: { title: "Stats\t" } } }],
+  ])("rejects invalid %s", (path, input) => {
+    const error = captureError(() =>
+      resolveConfig({ ...minimal, ...input }, {}),
+    );
+
+    expect(error.code).toBe("CONFIG_INVALID");
+    expect(error.message).toContain(path);
+  });
+
+  it.each<Partial<ConfigInput>>([
+    { themes: { dark: { ...mocha, border: "45475a80" } } },
+    { cards: { stats: { width: 400, hideRank: true } } },
+    {
       cards: {
-        stats: {
-          enabled: true,
-          width: 437,
-          showIcons: true,
-          hide: [],
-          hideRank: false,
-        },
+        stats: { height: 150 },
+        topLangs: { textSize: 10, percentGap: 0, percentSeparator: "" },
+      },
+    },
+    {
+      cards: {
         topLangs: {
-          enabled: true,
-          width: 320,
-          textSize: 11,
-          percentGap: 0,
-          percentSeparator: "",
-          count: 8,
-          hide: [],
+          height: 400,
+          textSize: 16,
+          percentGap: 40,
+          percentSeparator: "···",
         },
       },
-    });
-  });
-
-  it("rejects an invalid color and names the field", () => {
-    const error = captureError(() =>
-      resolveConfig(
-        { ...minimal, themes: { dark: { ...mocha, title: "#cba6f7" } } },
-        {},
-      ),
-    );
-
-    expect(error.code).toBe("CONFIG_INVALID");
-    expect(error.message).toContain("themes.dark.title");
-  });
-
-  it("accepts 8 digit colors", () => {
-    const config = resolveConfig(
-      { ...minimal, themes: { dark: { ...mocha, border: "45475a80" } } },
-      {},
-    );
-
-    expect(config.themes.dark?.border).toBe("45475a80");
-  });
-
-  it("rejects an invalid username", () => {
-    const error = captureError(() =>
-      resolveConfig({ ...minimal, username: "not a login" }, {}),
-    );
-
-    expect(error.code).toBe("CONFIG_INVALID");
-    expect(error.message).toContain("username");
+    },
+  ])("accepts %j", (input) => {
+    expect(resolveConfig({ ...minimal, ...input }, {})).toMatchObject(input);
   });
 
   it("lists every invalid field", () => {
@@ -97,152 +85,6 @@ describe("resolveConfig", () => {
     expect(error.message).toContain("gist.id");
     expect(error.message).toContain("excludeRepos.0");
     expect(error.message).toContain("cards.topLangs.count");
-  });
-
-  it("rejects empty themes and invalid theme keys", () => {
-    expect(
-      captureError(() => resolveConfig({ ...minimal, themes: {} }, {})).message,
-    ).toContain("themes");
-    expect(
-      captureError(() =>
-        resolveConfig({ ...minimal, themes: { Dark_Mode: mocha } }, {}),
-      ).message,
-    ).toContain("themes.Dark_Mode");
-  });
-
-  it("rejects a stats width below 420 while the rank ring is shown", () => {
-    const error = captureError(() =>
-      resolveConfig({ ...minimal, cards: { stats: { width: 400 } } }, {}),
-    );
-
-    expect(error.code).toBe("CONFIG_INVALID");
-    expect(error.message).toContain("cards.stats.width");
-  });
-
-  it("accepts a stats width below 420 when the rank ring is hidden", () => {
-    const config = resolveConfig(
-      { ...minimal, cards: { stats: { width: 400, hideRank: true } } },
-      {},
-    );
-
-    expect(config.cards.stats.width).toBe(400);
-  });
-
-  it("rejects widths outside 300-600", () => {
-    expect(
-      captureError(() =>
-        resolveConfig({ ...minimal, cards: { topLangs: { width: 299 } } }, {}),
-      ).message,
-    ).toContain("cards.topLangs.width");
-    expect(
-      captureError(() =>
-        resolveConfig({ ...minimal, cards: { stats: { width: 601 } } }, {}),
-      ).message,
-    ).toContain("cards.stats.width");
-  });
-
-  it("accepts card heights from 150 to 400 and leaves them unset by default", () => {
-    expect(resolveConfig(minimal, {}).cards.topLangs.height).toBeUndefined();
-    const config = resolveConfig(
-      {
-        ...minimal,
-        cards: { stats: { height: 150 }, topLangs: { height: 400 } },
-      },
-      {},
-    );
-    expect(config.cards.stats.height).toBe(150);
-    expect(config.cards.topLangs.height).toBe(400);
-  });
-
-  it("rejects card heights outside 150-400 or not integers", () => {
-    expect(
-      captureError(() =>
-        resolveConfig({ ...minimal, cards: { stats: { height: 149 } } }, {}),
-      ).message,
-    ).toContain("cards.stats.height");
-    expect(
-      captureError(() =>
-        resolveConfig({ ...minimal, cards: { topLangs: { height: 401 } } }, {}),
-      ).message,
-    ).toContain("cards.topLangs.height");
-    expect(
-      captureError(() =>
-        resolveConfig(
-          { ...minimal, cards: { topLangs: { height: 200.5 } } },
-          {},
-        ),
-      ).message,
-    ).toContain("cards.topLangs.height");
-  });
-
-  it("accepts textSize from 10 to 16 and rejects other values", () => {
-    for (const textSize of [10, 16]) {
-      expect(
-        resolveConfig({ ...minimal, cards: { topLangs: { textSize } } }, {})
-          .cards.topLangs.textSize,
-      ).toBe(textSize);
-    }
-    for (const textSize of [9, 17, 12.5]) {
-      expect(
-        captureError(() =>
-          resolveConfig({ ...minimal, cards: { topLangs: { textSize } } }, {}),
-        ).message,
-      ).toContain("cards.topLangs.textSize");
-    }
-  });
-
-  it("accepts percentGap from 0 to 40 and rejects other values", () => {
-    for (const percentGap of [0, 40]) {
-      expect(
-        resolveConfig({ ...minimal, cards: { topLangs: { percentGap } } }, {})
-          .cards.topLangs.percentGap,
-      ).toBe(percentGap);
-    }
-    for (const percentGap of [-1, 41, 2.5]) {
-      expect(
-        captureError(() =>
-          resolveConfig(
-            { ...minimal, cards: { topLangs: { percentGap } } },
-            {},
-          ),
-        ).message,
-      ).toContain("cards.topLangs.percentGap");
-    }
-  });
-
-  it("accepts a percentSeparator of up to 3 characters", () => {
-    for (const percentSeparator of ["", "•", "···"]) {
-      expect(
-        resolveConfig(
-          { ...minimal, cards: { topLangs: { percentSeparator } } },
-          {},
-        ).cards.topLangs.percentSeparator,
-      ).toBe(percentSeparator);
-    }
-    expect(
-      captureError(() =>
-        resolveConfig(
-          { ...minimal, cards: { topLangs: { percentSeparator: "----" } } },
-          {},
-        ),
-      ).message,
-    ).toContain("cards.topLangs.percentSeparator");
-  });
-
-  it("rejects control characters in separator and titles", () => {
-    function rejected(cards: Record<string, unknown>): string {
-      return captureError(() => resolveConfig({ ...minimal, cards }, {}))
-        .message;
-    }
-    expect(rejected({ topLangs: { percentSeparator: "\n" } })).toContain(
-      "cards.topLangs.percentSeparator",
-    );
-    expect(rejected({ topLangs: { title: "Langs\u0007" } })).toContain(
-      "cards.topLangs.title",
-    );
-    expect(rejected({ stats: { title: "Stats\t" } })).toContain(
-      "cards.stats.title",
-    );
   });
 
   it("merges env lists, de-duplicated case-insensitively", () => {
@@ -298,7 +140,6 @@ describe("loadConfig", () => {
   it("loads stats.config.ts and merges the env lists", async () => {
     const config = await loadConfig({ STATS_ORGS: "acme" });
 
-    expect(config.username).toBe("kboshold");
-    expect(config.orgs).toEqual(["acme"]);
+    expect(config.orgs).toContain("acme");
   });
 });

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { calculateRank } from "../../src/render/rank.ts";
 
 describe("calculateRank", () => {
-  it("matches the live card vector", () => {
+  it("ranks a typical active profile as A", () => {
     const result = calculateRank({
       commits: 4528,
       prs: 754,

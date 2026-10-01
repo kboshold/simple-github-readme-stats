@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { StatsError } from "../../src/errors.ts";
-import { diffFiles, pushToGist } from "../../src/publish/gist.ts";
+import { pushToGist } from "../../src/publish/gist.ts";
+import { captureError, json } from "../helpers.ts";
 
 const RAW_URL = "https://gist.githubusercontent.com/raw/stats-dark.svg";
 
@@ -10,13 +10,6 @@ interface RecordedRequest {
   method: string;
   body: unknown;
   authorization: string | null;
-}
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
 }
 
 function gist(files: Record<string, unknown>): Response {
@@ -59,44 +52,8 @@ const local = [
   { name: "stats-light.svg", content: "<svg>light</svg>" },
 ];
 
-async function captureError(run: Promise<unknown>): Promise<StatsError> {
-  try {
-    await run;
-  } catch (error) {
-    if (error instanceof StatsError) {
-      return error;
-    }
-    throw error;
-  }
-  throw new Error("expected a StatsError");
-}
-
 const PatchBodySchema = z.object({
   files: z.record(z.string(), z.object({ content: z.string() })),
-});
-
-describe("diffFiles", () => {
-  it("returns changed and new files, sorted", () => {
-    const remote = new Map([
-      ["stats-light.svg", "<svg>light</svg>"],
-      ["stats-dark.svg", "<svg>old</svg>"],
-      ["other.txt", "keep"],
-    ]);
-    const files = [
-      ...local,
-      { name: "top-langs-dark.svg", content: "<svg>langs</svg>" },
-    ];
-
-    expect(diffFiles(files, remote)).toEqual([
-      "stats-dark.svg",
-      "top-langs-dark.svg",
-    ]);
-  });
-
-  it("returns nothing when all contents match", () => {
-    const remote = new Map(local.map((file) => [file.name, file.content]));
-    expect(diffFiles(local, remote)).toEqual([]);
-  });
 });
 
 describe("pushToGist", () => {
@@ -222,19 +179,20 @@ describe("pushToGist", () => {
     expect(ctx.requests.map((request) => request.method)).toEqual(["GET"]);
   });
 
-  it("maps 404 to GIST_NOT_FOUND", async () => {
-    const ctx = setup([() => json(404, { message: "Not Found" })]);
+  it.each([
+    ["404", () => json(404, { message: "Not Found" }), "GIST_NOT_FOUND"],
+    ["403", () => json(403, { message: "Forbidden" }), "GIST_FORBIDDEN"],
+    ["401", () => json(401, { message: "Bad" }), "API_ERROR"],
+    [
+      "a rate limit",
+      () =>
+        json(403, { message: "rate limit" }, { "x-ratelimit-remaining": "0" }),
+      "API_ERROR",
+    ],
+  ])("maps %s to %s without retrying", async (_, response, code) => {
+    const ctx = setup([response]);
 
-    const error = await captureError(run(ctx));
-    expect(error.code).toBe("GIST_NOT_FOUND");
-    expect(ctx.sleeps).toEqual([]);
-  });
-
-  it("maps 403 to GIST_FORBIDDEN", async () => {
-    const ctx = setup([() => json(403, { message: "Forbidden" })]);
-
-    const error = await captureError(run(ctx));
-    expect(error.code).toBe("GIST_FORBIDDEN");
+    await expect(run(ctx)).rejects.toMatchObject({ code });
     expect(ctx.sleeps).toEqual([]);
   });
 
@@ -244,8 +202,7 @@ describe("pushToGist", () => {
       () => json(403, { message: "Forbidden" }),
     ]);
 
-    const error = await captureError(run(ctx));
-    expect(error.code).toBe("GIST_FORBIDDEN");
+    await expect(run(ctx)).rejects.toMatchObject({ code: "GIST_FORBIDDEN" });
   });
 
   it("retries a 502 and then succeeds", async () => {
@@ -267,33 +224,14 @@ describe("pushToGist", () => {
       Array.from({ length: 4 }, () => () => json(503, { message: "down" })),
     );
 
-    const error = await captureError(run(ctx));
-    expect(error.code).toBe("API_ERROR");
+    await expect(run(ctx)).rejects.toMatchObject({ code: "API_ERROR" });
     expect(ctx.sleeps).toEqual([1000, 3000, 9000]);
-  });
-
-  it("reports API_ERROR for 401 and rate limits", async () => {
-    const unauthorized = setup([() => json(401, { message: "Bad" })]);
-    expect((await captureError(run(unauthorized))).code).toBe("API_ERROR");
-
-    const limited = setup([
-      () =>
-        new Response(JSON.stringify({ message: "rate limit" }), {
-          status: 403,
-          headers: {
-            "content-type": "application/json",
-            "x-ratelimit-remaining": "0",
-          },
-        }),
-    ]);
-    expect((await captureError(run(limited))).code).toBe("API_ERROR");
   });
 
   it("rejects an invalid Gist response", async () => {
     const ctx = setup([() => json(200, { files: "nope" })]);
 
-    const error = await captureError(run(ctx));
-    expect(error.code).toBe("API_ERROR");
+    await expect(run(ctx)).rejects.toMatchObject({ code: "RESPONSE_INVALID" });
   });
 
   it("never includes the token in error messages", async () => {

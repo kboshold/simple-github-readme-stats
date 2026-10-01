@@ -1,21 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { StatsError } from "../../src/errors.ts";
 import { createClient } from "../../src/fetch/client.ts";
+import { captureError, json } from "../helpers.ts";
 
 const schema = z.object({ viewer: z.object({ login: z.string() }) });
 const success = () => json(200, { data: { viewer: { login: "octocat" } } });
-
-function json(
-  status: number,
-  body: unknown,
-  headers: Record<string, string> = {},
-): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json", ...headers },
-  });
-}
 
 function setup(responses: Array<() => Response>) {
   const sleeps: number[] = [];
@@ -36,18 +25,6 @@ function setup(responses: Array<() => Response>) {
     },
   });
   return { client, sleeps, requests };
-}
-
-async function captureError(run: Promise<unknown>): Promise<StatsError> {
-  try {
-    await run;
-  } catch (error) {
-    if (error instanceof StatsError) {
-      return error;
-    }
-    throw error;
-  }
-  throw new Error("expected a StatsError");
 }
 
 describe("createClient", () => {
@@ -147,25 +124,31 @@ describe("createClient", () => {
     expect(error.code).toBe("USER_NOT_FOUND");
   });
 
-  it("maps the primary rate limit to RATE_LIMITED without retrying", async () => {
-    const graphqlLimit = setup([
+  it.each([
+    [
+      "GraphQL",
       () => json(200, { errors: [{ type: "RATE_LIMITED", message: "limit" }] }),
-    ]);
-    const httpLimit = setup([
+    ],
+    [
+      "HTTP",
       () =>
         json(
           403,
           { message: "API rate limit exceeded" },
           { "x-ratelimit-remaining": "0" },
         ),
-    ]);
+    ],
+  ])(
+    "maps the %s primary rate limit to RATE_LIMITED without retrying",
+    async (_, response) => {
+      const { client, sleeps } = setup([response]);
 
-    for (const { client, sleeps } of [graphqlLimit, httpLimit]) {
-      const error = await captureError(client.query("query", {}, schema));
-      expect(error.code).toBe("RATE_LIMITED");
+      await expect(client.query("query", {}, schema)).rejects.toMatchObject({
+        code: "RATE_LIMITED",
+      });
       expect(sleeps).toEqual([]);
-    }
-  });
+    },
+  );
 
   it("honors retry-after on secondary rate limits", async () => {
     const { client, sleeps } = setup([
@@ -216,16 +199,15 @@ describe("createClient", () => {
     expect(sleeps).toEqual([]);
   });
 
-  it("maps a malformed body to RESPONSE_INVALID", async () => {
-    const wrongShape = setup([() => json(200, { data: { viewer: {} } })]);
-    const notJson = setup([
-      () => new Response("<html>oops</html>", { status: 200 }),
-    ]);
+  it.each([
+    ["a wrong shape", () => json(200, { data: { viewer: {} } })],
+    ["non-JSON", () => new Response("<html>oops</html>", { status: 200 })],
+  ])("maps %s body to RESPONSE_INVALID", async (_, response) => {
+    const { client } = setup([response]);
 
-    for (const { client } of [wrongShape, notJson]) {
-      const error = await captureError(client.query("query", {}, schema));
-      expect(error.code).toBe("RESPONSE_INVALID");
-    }
+    await expect(client.query("query", {}, schema)).rejects.toMatchObject({
+      code: "RESPONSE_INVALID",
+    });
   });
 
   it("reports only the type of path-bound GraphQL errors", async () => {

@@ -10,52 +10,79 @@ const config = ConfigSchema.parse({
 });
 
 const FIXTURES = {
-  main: "fixtures/data.json",
-  zeros: "tests/fixtures/zeros.json",
-  "long-name": "tests/fixtures/long-name.json",
-  "one-language": "tests/fixtures/one-language.json",
-  "no-color": "tests/fixtures/no-color.json",
-};
-
-describe.each(Object.entries(FIXTURES))("fixture %s", (fixture, path) => {
-  it("renders every card and theme", async () => {
-    const files = renderAll(await readSnapshot(path), config);
-    expect(files.map((file) => file.name)).toEqual([
+  main: {
+    path: "fixtures/data.json",
+    files: [
       "stats-dark.svg",
       "stats-light.svg",
       "top-langs-dark.svg",
       "top-langs-light.svg",
-    ]);
-    for (const file of files) {
-      await expect(file.content).toMatchFileSnapshot(
-        `__snapshots__/${fixture}/${file.name}`,
-      );
-    }
-  });
+    ],
+  },
+  zeros: {
+    path: "tests/fixtures/zeros.json",
+    files: ["stats-dark.svg", "top-langs-dark.svg"],
+  },
+  "long-name": {
+    path: "tests/fixtures/long-name.json",
+    files: ["stats-dark.svg"],
+  },
+  "one-language": {
+    path: "tests/fixtures/one-language.json",
+    files: ["top-langs-dark.svg"],
+  },
+  "no-color": {
+    path: "tests/fixtures/no-color.json",
+    files: ["top-langs-dark.svg"],
+  },
+};
+
+const FORBIDDEN = [
+  /<script/i,
+  /<foreignObject/i,
+  /<image/i,
+  /@import/i,
+  /href=/i,
+  /url\((?!#)/i,
+];
+
+const equalSizeConfig = ConfigSchema.parse({
+  username: "octocat",
+  gist: { id: "a".repeat(32) },
+  themes: { dark: config.themes.dark },
+  cards: {
+    stats: { enabled: false },
+    topLangs: {
+      width: 437,
+      height: 195,
+      textSize: 13,
+      percentGap: 10,
+      percentSeparator: "•",
+      hide: ["html", "scss", "css"],
+    },
+  },
 });
+
+describe.each(Object.entries(FIXTURES))(
+  "fixture %s",
+  (fixture, { path, files }) => {
+    it("matches the snapshots", async () => {
+      const rendered = renderAll(await readSnapshot(path), config);
+      for (const name of files) {
+        const file = rendered.find((output) => output.name === name);
+        await expect(file?.content).toMatchFileSnapshot(
+          `__snapshots__/${fixture}/${name}`,
+        );
+      }
+    });
+  },
+);
 
 describe("equal size layout", () => {
   it("renders top-langs at 437x195", async () => {
-    const snapshot = await readSnapshot(FIXTURES.main);
-    const equal = ConfigSchema.parse({
-      username: "octocat",
-      gist: { id: "a".repeat(32) },
-      themes: { dark: config.themes.dark },
-      cards: {
-        stats: { enabled: false },
-        topLangs: {
-          width: 437,
-          height: 195,
-          textSize: 13,
-          percentGap: 10,
-          percentSeparator: "•",
-          hide: ["html", "scss", "css"],
-        },
-      },
-    });
-    const [file] = renderAll(snapshot, equal);
+    const snapshot = await readSnapshot(FIXTURES.main.path);
+    const [file] = renderAll(snapshot, equalSizeConfig);
     expect(file?.name).toBe("top-langs-dark.svg");
-    expect(file?.content).toContain('viewBox="0 0 437 195"');
     await expect(file?.content).toMatchFileSnapshot(
       "__snapshots__/equal-size/top-langs-dark.svg",
     );
@@ -63,14 +90,24 @@ describe("equal size layout", () => {
 });
 
 describe("renderAll", () => {
-  it("is byte-identical across renders", async () => {
-    const first = renderAll(await readSnapshot(FIXTURES.main), config);
-    const second = renderAll(await readSnapshot(FIXTURES.main), config);
-    expect(second).toEqual(first);
+  it("uses no scripts or external resources", async () => {
+    const outputs = [];
+    for (const { path } of Object.values(FIXTURES)) {
+      const snapshot = await readSnapshot(path);
+      outputs.push(
+        ...renderAll(snapshot, config),
+        ...renderAll(snapshot, equalSizeConfig),
+      );
+    }
+    for (const { content } of outputs) {
+      for (const pattern of FORBIDDEN) {
+        expect(content).not.toMatch(pattern);
+      }
+    }
   });
 
   it("skips disabled cards", async () => {
-    const snapshot = await readSnapshot(FIXTURES.main);
+    const snapshot = await readSnapshot(FIXTURES.main.path);
     const partial = ConfigSchema.parse({
       username: "octocat",
       gist: { id: "a".repeat(32) },

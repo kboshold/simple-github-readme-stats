@@ -27,14 +27,6 @@
         width: 270px;
       }
     }
-    @keyframes growWidthAnimation {
-      from {
-        width: 0;
-      }
-      to {
-        width: 100%;
-      }
-    }
     .stat {
       font: 600 14px 'Segoe UI', Ubuntu, "Helvetica Neue", Sans-Serif; fill: #cdd6f4;
     }
@@ -53,9 +45,6 @@
     }
     #rect-mask rect{
       animation: slideInAnimation 1s ease-in-out forwards;
-    }
-    .lang-progress{
-      animation: growWidthAnimation 0.6s ease-in-out forwards;
     }
     /* Animations */
     @keyframes scaleInAnimation {
@@ -97,9 +86,7 @@
   />
 
   <g data-testid="card-title" transform="translate(25, 35)">
-    <g transform="translate(0, 0)">
-      <text x="0" y="0" class="header" data-testid="header">Most Used Languages</text>
-    </g>
+    <text x="0" y="0" class="header" data-testid="header">Most Used Languages</text>
   </g>
 
   <g data-testid="main-card-body" transform="translate(0, 55)">
@@ -128,7 +115,7 @@
     <rect
       mask="url(#rect-mask)"
       data-testid="lang-progress"
-      x="235.76999999999998"
+      x="235.77"
       y="0"
       width="34.23"
       height="8"

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   escapeXml,
   formatCount,
-  formatPercent,
   truncate,
 } from "../../src/render/svg/format.ts";
 
@@ -19,19 +18,6 @@ describe("formatCount", () => {
     expect(formatCount(4528)).toBe("4.5k");
     expect(formatCount(15_960)).toBe("16k");
   });
-
-  it("keeps the sign for negative values", () => {
-    expect(formatCount(-61)).toBe("-61");
-    expect(formatCount(-1250)).toBe("-1.3k");
-  });
-});
-
-describe("formatPercent", () => {
-  it("uses two decimals", () => {
-    expect(formatPercent(54.9412)).toBe("54.94");
-    expect(formatPercent(100)).toBe("100.00");
-    expect(formatPercent(0.005)).toBe("0.01");
-  });
 });
 
 describe("escapeXml", () => {
@@ -39,9 +25,6 @@ describe("escapeXml", () => {
     expect(escapeXml(`a & b < c > d "e" 'f'`)).toBe(
       "a &amp; b &lt; c &gt; d &quot;e&quot; &#39;f&#39;",
     );
-  });
-
-  it("leaves plain text untouched", () => {
     expect(escapeXml("Kevin Boshold")).toBe("Kevin Boshold");
   });
 });

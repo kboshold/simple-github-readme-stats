@@ -60,14 +60,11 @@ describe("resolveSnapshot", () => {
     expect(result.snapshot.fetchedAt).toBe("2026-01-01T00:00:00.000Z");
   });
 
-  it("falls back to the fixture when the cache is not JSON", async () => {
-    await writeFile(cachePath, "{ broken");
-    const result = await resolveSnapshot(cachePath, fixturePath, readSnapshot);
-    expect(result.source).toBe("fixture");
-  });
-
-  it("falls back to the fixture when the cache fails the schema", async () => {
-    await writeFile(cachePath, JSON.stringify({ schemaVersion: 99 }));
+  it.each([
+    ["is not JSON", "{ broken"],
+    ["fails the schema", JSON.stringify({ schemaVersion: 99 })],
+  ])("falls back to the fixture when the cache %s", async (_, content) => {
+    await writeFile(cachePath, content);
     const result = await resolveSnapshot(cachePath, fixturePath, readSnapshot);
     expect(result.source).toBe("fixture");
   });
@@ -107,12 +104,10 @@ describe("resolveSnapshot", () => {
 });
 
 describe("isSameOriginRequest", () => {
-  it("allows requests without Sec-Fetch-Site", () => {
-    expect(isSameOriginRequest({})).toBe(true);
-  });
-
-  it.each(["same-origin", "none"])("allows %s", (site) => {
-    expect(isSameOriginRequest({ "sec-fetch-site": site })).toBe(true);
+  it.each([undefined, "same-origin", "none"])("allows %s", (site) => {
+    expect(
+      isSameOriginRequest(site === undefined ? {} : { "sec-fetch-site": site }),
+    ).toBe(true);
   });
 
   it.each(["cross-site", "same-site"])("rejects %s", (site) => {
