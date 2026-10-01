@@ -19,7 +19,7 @@ export function hex(color: string): string {
   return `#${color}`;
 }
 
-export function statCss(theme: Theme): string {
+export function statTextCss(theme: Theme): string {
   return `.stat {
   font: 600 14px 'Segoe UI', Ubuntu, "Helvetica Neue", Sans-Serif; fill: ${hex(theme.text)};
 }
@@ -73,8 +73,7 @@ const ANIMATION_CSS = `/* Animations */
   }
 }`;
 
-// Contract: card CSS must set final animated values (e.g. ring stroke-dashoffset) as base styles;
-// final states that differ from the base style go into `reducedMotionCss`.
+// Base styles hold the final animated values; other end states go into `extra`.
 function reducedMotionCss(extra: string): string {
   const rules = [
     "* {\n  animation: none !important;\n}",
@@ -131,9 +130,7 @@ ${indent(style, 4)}
   />
 
   <g data-testid="card-title" transform="translate(25, 35)">
-    <g transform="translate(0, 0)">
-      <text x="0" y="0" class="header" data-testid="header">${escapeXml(input.title)}</text>
-    </g>
+    <text x="0" y="0" class="header" data-testid="header">${escapeXml(input.title)}</text>
   </g>
 
   <g data-testid="main-card-body" transform="translate(0, 55)">

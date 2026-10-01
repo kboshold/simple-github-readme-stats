@@ -6,13 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "**",
-      "!dist",
-      "!.cache",
-      "!local.concept",
-      "!tests/render/__snapshots__"
-    ]
+    "includes": ["**", "!dist", "!.cache", "!tests/render/__snapshots__"]
   },
   "formatter": {
     "indentStyle": "space"

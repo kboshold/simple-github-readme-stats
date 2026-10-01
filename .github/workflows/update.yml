@@ -36,15 +36,10 @@ jobs:
           STATS_EXCLUDE_REPOS: ${{ secrets.STATS_EXCLUDE_REPOS }}
       - name: Render cards
         run: pnpm svg:render
-        env:
-          STATS_ORGS: ${{ secrets.STATS_ORGS }}
-          STATS_EXCLUDE_REPOS: ${{ secrets.STATS_EXCLUDE_REPOS }}
       - name: Push to Gist
         run: pnpm gist:push
         env:
           GH_TOKEN: ${{ secrets.STATS_TOKEN }}
-          STATS_ORGS: ${{ secrets.STATS_ORGS }}
-          STATS_EXCLUDE_REPOS: ${{ secrets.STATS_EXCLUDE_REPOS }}
       - name: Keepalive
         if: success()
         run: gh workflow enable update.yml

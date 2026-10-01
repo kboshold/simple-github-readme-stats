@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import { z } from "zod";
 import { loadConfig } from "../config/load.ts";
 import { runCli, StatsError } from "../errors.ts";
 import { pushToGist } from "../publish/gist.ts";
@@ -8,9 +9,15 @@ import type { OutputFile } from "../render/index.ts";
 import { loadEnvFile, requireToken } from "./env.ts";
 
 const DIST_DIR = "dist";
+const NodeErrorSchema = z.object({ code: z.string() });
 
 async function readDist(dir: string): Promise<OutputFile[]> {
-  const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  const entries = await readdir(dir, { withFileTypes: true }).catch(
+    (error: unknown) => {
+      if (NodeErrorSchema.safeParse(error).data?.code === "ENOENT") return [];
+      throw error;
+    },
+  );
   const names = entries
     .filter((entry) => entry.isFile() && entry.name.endsWith(".svg"))
     .map((entry) => entry.name)

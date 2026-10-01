@@ -4,7 +4,12 @@ import { StatsError } from "../errors.ts";
 import {
   classifyHttpError,
   type Failure,
+  fatal,
   HttpErrorSchema,
+  isTransientStatus,
+  networkError,
+  retryable,
+  unknownFailure,
   withRetry,
 } from "../fetch/client.ts";
 import type { OutputFile } from "../render/index.ts";
@@ -31,7 +36,7 @@ const GistSchema = z.object({
 
 type GistFile = z.infer<typeof GistSchema>["files"][string];
 
-export function diffFiles(
+function diffFiles(
   local: readonly OutputFile[],
   remote: ReadonlyMap<string, string>,
 ): string[] {
@@ -49,22 +54,15 @@ function apiError(error: StatsError): StatsError {
 
 function classifyGistError(error: unknown): Failure {
   if (error instanceof StatsError) {
-    return { retry: false, error };
+    return fatal(error);
   }
   const http = HttpErrorSchema.safeParse(error);
   if (!http.success) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      retry: false,
-      error: new StatsError("API_ERROR", message, { cause: error }),
-    };
+    return unknownFailure(error);
   }
   const { status, response } = http.data;
   if (response !== undefined && status === 404) {
-    return {
-      retry: false,
-      error: new StatsError("GIST_NOT_FOUND", "Gist not found (404)"),
-    };
+    return fatal(new StatsError("GIST_NOT_FOUND", "Gist not found (404)"));
   }
   const failure = classifyHttpError(http.data);
   if (
@@ -72,13 +70,12 @@ function classifyGistError(error: unknown): Failure {
     status === 403 &&
     failure.error.code !== "RATE_LIMITED"
   ) {
-    return {
-      retry: false,
-      error: new StatsError(
+    return fatal(
+      new StatsError(
         "GIST_FORBIDDEN",
         "Access to the Gist denied (403): GH_TOKEN needs the gist scope and must belong to the Gist owner",
       ),
-    };
+    );
   }
   return { ...failure, error: apiError(failure.error) };
 }
@@ -95,24 +92,18 @@ class RawStatusError extends Error {
 function classifyRawError(error: unknown): Failure {
   if (error instanceof RawStatusError) {
     const failure = new StatsError("API_ERROR", error.message);
-    return error.status === 502 || error.status === 503
-      ? { retry: true, error: failure, retryAfterMs: 0 }
-      : { retry: false, error: failure };
+    return isTransientStatus(error.status)
+      ? retryable(failure)
+      : fatal(failure);
   }
   const message = error instanceof Error ? error.message : String(error);
-  return {
-    retry: true,
-    error: new StatsError("API_ERROR", `Network error: ${message}`, {
-      cause: error,
-    }),
-    retryAfterMs: 0,
-  };
+  return retryable(networkError(message, error));
 }
 
 export async function pushToGist(options: PushOptions): Promise<string[]> {
   const { gistId, token, files, dryRun } = options;
   const fetchImpl = options.fetch ?? fetch;
-  const sleep = options.sleep;
+  const { sleep } = options;
   const request = octokitRequest.defaults({
     headers: { authorization: `token ${token}` },
     request: { fetch: fetchImpl },
@@ -148,7 +139,7 @@ export async function pushToGist(options: PushOptions): Promise<string[]> {
   );
   const gist = GistSchema.safeParse(data);
   if (!gist.success) {
-    throw new StatsError("API_ERROR", "Unexpected Gist response shape");
+    throw new StatsError("RESPONSE_INVALID", "Unexpected Gist response shape");
   }
 
   const remote = new Map<string, string>();

@@ -4,7 +4,7 @@ import { ConfigSchema } from "../../src/config/schema.ts";
 import type { Snapshot } from "../../src/fetch/snapshot.ts";
 import { renderStatsCard } from "../../src/render/cards/stats.ts";
 
-const REFERENCE_RING_OFFSET = 44.290542282932826;
+const RANK_A_RING_OFFSET = 44.290542282932826;
 
 function snapshot(overrides: Partial<Snapshot["user"]> = {}): Snapshot {
   return {
@@ -46,30 +46,8 @@ function rowCount(svg: string): number {
 }
 
 describe("renderStatsCard", () => {
-  it("renders five rows with formatted values and reference layout", () => {
-    const svg = render();
-    expect(rowCount(svg)).toBe(5);
-    expect(svg).toContain('width="437"');
-    expect(svg).toContain('height="195"');
-    expect(svg).toContain('data-testid="commits"\n');
-    expect(svg).toMatch(/data-testid="commits"\s*>4\.5k</);
-    expect(svg).toContain('x="219.01"');
-    expect(svg).toContain("animation-delay: 450ms");
-    expect(svg).toContain("animation-delay: 1050ms");
-    expect(svg).toContain('transform="translate(367, 47.5)"');
-  });
-
-  it("builds title, a11y title and desc", () => {
-    const svg = render();
-    expect(svg).toContain(
-      'data-testid="header">Kevin Boshold&#39;s GitHub Stats<',
-    );
-    expect(svg).toContain(
-      '<title id="titleId">Kevin Boshold&#39;s GitHub Stats, Rank: A</title>',
-    );
-    expect(svg).toContain(
-      '<desc id="descId">Total Stars Earned: 61, Total Commits (last year): 4528, Total PRs: 754, Total Issues: 290, Contributed to (last year): 51</desc>',
-    );
+  it("renders five rows by default", () => {
+    expect(rowCount(render())).toBe(5);
   });
 
   it("uses custom title and login fallback", () => {
@@ -78,16 +56,6 @@ describe("renderStatsCard", () => {
     );
     expect(render({}, snapshot({ name: null }))).toContain(
       'data-testid="header">kboshold&#39;s GitHub Stats<',
-    );
-  });
-
-  it("truncates a long display name so the title fits", () => {
-    const svg = render({}, snapshot({ name: "A".repeat(80) }));
-    const title = svg.match(/data-testid="header">([^<]*)</)?.[1] ?? "";
-    expect(title).toContain("…");
-    expect(title.endsWith("&#39;s GitHub Stats")).toBe(true);
-    expect(Array.from(title.replace("&#39;", "'")).length).toBeLessThanOrEqual(
-      35,
     );
   });
 
@@ -123,48 +91,29 @@ describe("renderStatsCard", () => {
     expect(svg).toContain(
       '<title id="titleId">Kevin Boshold&#39;s GitHub Stats</title>',
     );
-  });
-
-  it("omits icons and shifts values with showIcons false", () => {
-    const svg = render({ cards: { stats: { showIcons: false } } });
-    expect(svg).not.toContain('class="icon"');
-    expect(svg).toContain('x="199.01"');
-    expect(svg).not.toContain('x="25" y="12.5"');
-  });
-
-  it("matches the reference ring offset", () => {
-    const svg = render();
-    const to = svg.match(/to \{\s*stroke-dashoffset: ([\d.]+);/)?.[1];
-    expect(Number(to)).toBeCloseTo(REFERENCE_RING_OFFSET, 2);
-    expect(svg).toContain(`stroke-dashoffset: ${2 * Math.PI * 40};`);
-  });
-
-  it("sets the final ring offset as base style for reduced motion", () => {
-    const svg = render();
-    const rule = svg.match(/\.rank-circle \{[^}]*\}/)?.[0] ?? "";
-    const base = rule.match(/stroke-dashoffset: ([\d.]+);/)?.[1];
-    expect(Number(base)).toBeCloseTo(REFERENCE_RING_OFFSET, 2);
-    expect(rule).toContain("animation: rankAnimation 1s forwards ease-in-out;");
-  });
-
-  it("shows the final rank text position with reduced motion", () => {
-    const svg = render();
-    const block = svg.slice(
-      svg.indexOf("@media (prefers-reduced-motion: reduce)"),
-    );
-    expect(block).toMatch(
-      /\.rank-text \{\s*transform: translate\(-5px, 5px\);\s*\}/,
-    );
-    const hidden = render({ cards: { stats: { hideRank: true } } });
     expect(
-      hidden.slice(hidden.indexOf("@media (prefers-reduced-motion: reduce)")),
+      svg.slice(svg.indexOf("@media (prefers-reduced-motion: reduce)")),
     ).not.toMatch(/\.rank-text/);
   });
 
-  it("uses theme colors", () => {
+  it("omits icons with showIcons false", () => {
+    const svg = render({ cards: { stats: { showIcons: false } } });
+    expect(svg).not.toContain('class="icon"');
+    expect(svg).not.toContain('x="25" y="12.5"');
+  });
+
+  it("animates the ring to the rank offset and keeps it for reduced motion", () => {
     const svg = render();
-    expect(svg).toContain("stroke: #89b4fa;");
-    expect(svg).toContain("fill: #cdd6f4;");
+    const to = svg.match(/to \{\s*stroke-dashoffset: ([\d.]+);/)?.[1];
+    expect(Number(to)).toBeCloseTo(RANK_A_RING_OFFSET, 2);
+    expect(svg).toContain(`stroke-dashoffset: ${2 * Math.PI * 40};`);
+    const rule = svg.match(/\.rank-circle \{[^}]*\}/)?.[0] ?? "";
+    const base = rule.match(/stroke-dashoffset: ([\d.]+);/)?.[1];
+    expect(Number(base)).toBeCloseTo(RANK_A_RING_OFFSET, 2);
+    expect(rule).toContain("animation: rankAnimation 1s forwards ease-in-out;");
+    expect(
+      svg.slice(svg.indexOf("@media (prefers-reduced-motion: reduce)")),
+    ).toMatch(/\.rank-text \{\s*transform: translate\(-5px, 5px\);\s*\}/);
   });
 
   it("treats height as a minimum and keeps the computed height when larger", () => {

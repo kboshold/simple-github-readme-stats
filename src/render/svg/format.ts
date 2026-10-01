@@ -1,12 +1,8 @@
 export function formatCount(n: number): string {
-  if (Math.abs(n) > 999) {
+  if (n > 999) {
     return `${Number.parseFloat((n / 1000).toFixed(1))}k`;
   }
   return String(n);
-}
-
-export function formatPercent(n: number): string {
-  return n.toFixed(2);
 }
 
 const XML_ENTITIES: Record<string, string> = {

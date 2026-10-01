@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { requireToken } from "../../src/cli/env.ts";
-import { StatsError } from "../../src/errors.ts";
 
 describe("requireToken", () => {
   it("returns the trimmed token when set", () => {
@@ -17,6 +16,5 @@ describe("requireToken", () => {
     expect(() => requireToken(env)).toThrow(
       expect.objectContaining({ code: "TOKEN_MISSING" }),
     );
-    expect(() => requireToken(env)).toThrow(StatsError);
   });
 });

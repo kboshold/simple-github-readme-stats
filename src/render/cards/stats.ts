@@ -3,11 +3,12 @@ import type { Snapshot } from "../../fetch/snapshot.ts";
 import { calculateRank, type RankResult } from "../rank.ts";
 import {
   BOLD_CSS,
+  FONT_STACK,
   hex,
   iconCss,
   renderCard,
   STAGGER_CSS,
-  statCss,
+  statTextCss,
 } from "../svg/card.ts";
 import { escapeXml, formatCount, truncate } from "../svg/format.ts";
 import { type IconName, renderIcon } from "../svg/icons.ts";
@@ -82,14 +83,17 @@ function buildRows(snapshot: Snapshot, config: Config): StatRow[] {
   return rows.filter((row) => !hidden.has(row.key));
 }
 
+function displayName(snapshot: Snapshot): string {
+  return snapshot.user.name ?? snapshot.user.login;
+}
+
 function buildTitle(snapshot: Snapshot, config: Config): string {
   const maxChars = Math.floor(
     (config.cards.stats.width - 50) / TITLE_CHAR_WIDTH_PX,
   );
   const custom = config.cards.stats.title;
   if (custom !== undefined) return truncate(custom, maxChars);
-  const name = snapshot.user.name ?? snapshot.user.login;
-  return `${truncate(name, maxChars - TITLE_SUFFIX.length)}${TITLE_SUFFIX}`;
+  return `${truncate(displayName(snapshot), maxChars - TITLE_SUFFIX.length)}${TITLE_SUFFIX}`;
 }
 
 function renderRow(row: StatRow, index: number, showIcons: boolean): string {
@@ -128,19 +132,13 @@ function ringOffset(percentile: number): number {
 
 function statsCss(theme: Theme, rank: RankResult | null): string {
   const blocks = [
-    statCss(theme),
+    statTextCss(theme),
     STAGGER_CSS,
     `.rank-text {
-  font: 800 24px 'Segoe UI', Ubuntu, Sans-Serif; fill: ${hex(theme.text)};
+  font: 800 24px ${FONT_STACK}; fill: ${hex(theme.text)};
   animation: scaleInAnimation 0.3s ease-in-out forwards;
-}
-.rank-percentile-header {
-  font-size: 14px;
-}
-.rank-percentile-text {
-  font-size: 16px;
 }`,
-    `.not_bold { font-weight: 400 }\n${BOLD_CSS}`,
+    BOLD_CSS,
     iconCss(theme),
   ];
   if (rank !== null) {
@@ -201,9 +199,7 @@ export function renderStatsCard(
     options.height ?? 0,
   );
   const title = buildTitle(snapshot, config);
-  const fullTitle =
-    options.title ??
-    `${snapshot.user.name ?? snapshot.user.login}${TITLE_SUFFIX}`;
+  const fullTitle = options.title ?? `${displayName(snapshot)}${TITLE_SUFFIX}`;
   const rowsSvg = rows
     .map((row, index) => renderRow(row, index, options.showIcons))
     .join("");

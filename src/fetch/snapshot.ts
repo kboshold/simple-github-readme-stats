@@ -2,14 +2,14 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { z } from "zod";
-import { StatsError } from "../errors.ts";
+import { issuePaths, StatsError } from "../errors.ts";
 
 export const SNAPSHOT_PATH = ".cache/data.json";
 export const SNAPSHOT_SCHEMA_VERSION = 1;
 
 const count = z.number().int().nonnegative();
 
-export const languageStatSchema = z.strictObject({
+const languageStatSchema = z.strictObject({
   name: z.string(),
   color: z
     .string()
@@ -42,13 +42,6 @@ export type Snapshot = z.infer<typeof snapshotSchema>;
 
 const NodeErrorSchema = z.object({ code: z.string() });
 
-function describeIssues(error: z.ZodError): string {
-  const paths = error.issues.map(
-    (issue) => issue.path.map(String).join(".") || "(root)",
-  );
-  return [...new Set(paths)].join(", ");
-}
-
 export async function writeSnapshot(
   path: string,
   snapshot: Snapshot,
@@ -57,7 +50,7 @@ export async function writeSnapshot(
   if (!parsed.success) {
     throw new StatsError(
       "SNAPSHOT_INVALID",
-      `Refusing to write an invalid snapshot: ${describeIssues(parsed.error)}`,
+      `Refusing to write an invalid snapshot: ${issuePaths(parsed.error)}`,
     );
   }
   const dir = dirname(path);
@@ -95,7 +88,7 @@ export async function readSnapshot(path: string): Promise<Snapshot> {
   if (!parsed.success) {
     throw new StatsError(
       "SNAPSHOT_INVALID",
-      `Snapshot ${path} is invalid at: ${describeIssues(parsed.error)}`,
+      `Snapshot is invalid at ${issuePaths(parsed.error)}: ${path}`,
     );
   }
   return parsed.data;

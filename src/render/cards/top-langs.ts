@@ -5,9 +5,9 @@ import {
   hex,
   renderCard,
   STAGGER_CSS,
-  statCss,
+  statTextCss,
 } from "../svg/card.ts";
-import { escapeXml, formatPercent, truncate } from "../svg/format.ts";
+import { escapeXml, truncate } from "../svg/format.ts";
 
 export interface ShownLanguage {
   name: string;
@@ -96,7 +96,7 @@ export function listLayout(
   };
 }
 
-function css(
+function topLangsCss(
   theme: Theme,
   barWidth: number,
   textSize: number,
@@ -110,15 +110,7 @@ function css(
     width: ${barWidth}px;
   }
 }
-@keyframes growWidthAnimation {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
-}
-${statCss(theme)}
+${statTextCss(theme)}
 ${BOLD_CSS}
 .lang-name {
   font: 400 ${textSize}px "Segoe UI", Ubuntu, Sans-Serif;
@@ -134,9 +126,6 @@ ${BOLD_CSS}
 ${STAGGER_CSS}
 #rect-mask rect{
   animation: slideInAnimation 1s ease-in-out forwards;
-}
-.lang-progress{
-  animation: growWidthAnimation 0.6s ease-in-out forwards;
 }`;
 }
 
@@ -161,7 +150,7 @@ function renderBar(
   height="${layout.barHeight}"
   fill="${hex(language.color)}"
 />`;
-    offset += width;
+    offset = Number.parseFloat((offset + width).toFixed(2));
     return segment;
   });
   return `<mask id="rect-mask">
@@ -190,7 +179,7 @@ function renderItem(
   separator: string,
 ): string {
   const delay = FIRST_ROW_DELAY_MS + index * ROW_DELAY_STEP_MS;
-  const percent = `${formatPercent(language.percent)}%`;
+  const percent = `${language.percent.toFixed(2)}%`;
   const gap = layout.percentGap;
   const separatorChars = separator === "" ? 0 : [...separator].length + 1;
   const nameChars =
@@ -246,7 +235,7 @@ export function renderTopLangsCard(
   const title = truncate(fullTitle, Math.floor(barWidth / TITLE_CHAR_WIDTH_PX));
   const layout = listLayout(options, languages.length);
   const list = languages
-    .map((language) => `${language.name} ${formatPercent(language.percent)}%`)
+    .map((language) => `${language.name} ${language.percent.toFixed(2)}%`)
     .join(", ");
   const body =
     languages.length === 0
@@ -263,7 +252,12 @@ ${renderList(languages, options.width, layout, options.percentSeparator)}
     a11yTitle: fullTitle,
     a11yDesc: languages.length === 0 ? "No languages found" : list,
     theme,
-    css: css(theme, barWidth, layout.textSize, options.percentSeparator),
+    css: topLangsCss(
+      theme,
+      barWidth,
+      layout.textSize,
+      options.percentSeparator,
+    ),
     body,
   });
 }
