@@ -1,3 +1,5 @@
+import type { z } from "zod";
+
 export type StatsErrorCode =
   | "CONFIG_INVALID"
   | "TOKEN_MISSING"
@@ -10,11 +12,7 @@ export type StatsErrorCode =
   | "SNAPSHOT_INVALID"
   | "DIST_EMPTY"
   | "GIST_NOT_FOUND"
-  | "GIST_FORBIDDEN"
-  | "CARD_NOT_FOUND"
-  | "RENDER_FAILED"
-  | "FETCH_FAILED"
-  | "ORIGIN_FORBIDDEN";
+  | "GIST_FORBIDDEN";
 
 export class StatsError extends Error {
   readonly code: StatsErrorCode;
@@ -24,6 +22,13 @@ export class StatsError extends Error {
     this.name = "StatsError";
     this.code = code;
   }
+}
+
+export function issuePaths(error: z.ZodError): string {
+  const paths = error.issues.map(
+    (issue) => issue.path.map(String).join(".") || "(root)",
+  );
+  return [...new Set(paths)].join(", ");
 }
 
 function formatError(error: unknown): string {

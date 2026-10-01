@@ -1,7 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { GraphqlResponseError, graphql } from "@octokit/graphql";
 import { z } from "zod";
-import { StatsError } from "../errors.ts";
+import { issuePaths, StatsError } from "../errors.ts";
 
 export interface GraphQLClient {
   query<T>(
@@ -37,12 +37,25 @@ export const HttpErrorSchema = z.object({
   response: z.object({ headers: z.record(z.string(), z.unknown()) }).optional(),
 });
 
-function fatal(error: StatsError): Failure {
+export function fatal(error: StatsError): Failure {
   return { retry: false, error };
 }
 
-function retryable(error: StatsError, retryAfterMs = 0): Failure {
+export function retryable(error: StatsError, retryAfterMs = 0): Failure {
   return { retry: true, error, retryAfterMs };
+}
+
+export function isTransientStatus(status: number): boolean {
+  return status === 502 || status === 503;
+}
+
+export function networkError(message: string, cause?: unknown): StatsError {
+  return new StatsError("API_ERROR", `Network error: ${message}`, { cause });
+}
+
+export function unknownFailure(error: unknown): Failure {
+  const message = error instanceof Error ? error.message : String(error);
+  return fatal(new StatsError("API_ERROR", message, { cause: error }));
 }
 
 function classifyGraphqlError(error: GraphqlResponseError<unknown>): Failure {
@@ -94,7 +107,7 @@ export function classifyHttpError(
   const { status, message, response } = error;
 
   if (response === undefined) {
-    return retryable(new StatsError("API_ERROR", `Network error: ${message}`));
+    return retryable(networkError(message));
   }
   if (status === 401) {
     return fatal(
@@ -127,7 +140,7 @@ export function classifyHttpError(
     "API_ERROR",
     `GitHub API request failed (${status})`,
   );
-  return status === 502 || status === 503 ? retryable(failure) : fatal(failure);
+  return isTransientStatus(status) ? retryable(failure) : fatal(failure);
 }
 
 function classify(error: unknown): Failure {
@@ -138,8 +151,7 @@ function classify(error: unknown): Failure {
   if (http.success) {
     return classifyHttpError(http.data);
   }
-  const message = error instanceof Error ? error.message : String(error);
-  return fatal(new StatsError("API_ERROR", message, { cause: error }));
+  return unknownFailure(error);
 }
 
 export async function withRetry<T>(
@@ -165,18 +177,10 @@ export function createClient(
   token: string,
   options: ClientOptions = {},
 ): GraphQLClient {
-  const sleep = options.sleep ?? ((ms: number) => delay(ms));
   const request = graphql.defaults({
     headers: { authorization: `token ${token}` },
     request: { fetch: options.fetch ?? fetch },
   });
-
-  function execute(
-    document: string,
-    variables: Record<string, unknown>,
-  ): Promise<unknown> {
-    return withRetry(() => request(document, variables), classify, sleep);
-  }
 
   return {
     async query<T>(
@@ -184,14 +188,16 @@ export function createClient(
       variables: Record<string, unknown>,
       schema: z.ZodType<T>,
     ): Promise<T> {
-      const parsed = schema.safeParse(await execute(document, variables));
+      const data = await withRetry(
+        () => request(document, variables),
+        classify,
+        options.sleep,
+      );
+      const parsed = schema.safeParse(data);
       if (!parsed.success) {
-        const paths = parsed.error.issues.map(
-          (issue) => issue.path.map(String).join(".") || "(root)",
-        );
         throw new StatsError(
           "RESPONSE_INVALID",
-          `Unexpected GitHub response shape at: ${[...new Set(paths)].join(", ")}`,
+          `Unexpected GitHub response shape at: ${issuePaths(parsed.error)}`,
         );
       }
       return parsed.data;

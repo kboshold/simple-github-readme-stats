@@ -7,14 +7,14 @@ import type {
 import { resolve, sep } from "node:path";
 import type { Plugin, ViteDevServer } from "vite";
 import { z } from "zod";
-import type * as EnvModule from "../cli/env.ts";
+import { requireToken } from "../cli/env.ts";
 import type * as ConfigModule from "../config/load.ts";
 import type { StatsErrorCode } from "../errors.ts";
 import type * as FetchModule from "../fetch/index.ts";
 import type * as SnapshotModule from "../fetch/snapshot.ts";
 import type * as RenderModule from "../render/index.ts";
 
-export const FIXTURE_PATH = "fixtures/data.json";
+const FIXTURE_PATH = "fixtures/data.json";
 
 function exportedFunction<T>() {
   return z.custom<T>((value) => typeof value === "function");
@@ -34,30 +34,33 @@ const SnapshotModuleSchema = z.object({
   readSnapshot: exportedFunction<typeof SnapshotModule.readSnapshot>(),
   writeSnapshot: exportedFunction<typeof SnapshotModule.writeSnapshot>(),
 });
-const EnvModuleSchema = z.object({
-  requireToken: exportedFunction<typeof EnvModule.requireToken>(),
-});
+type SnapshotSource = "cache" | "fixture";
 
-export type SnapshotSource = "cache" | "fixture";
+type PreviewErrorCode =
+  | StatsErrorCode
+  | "CARD_NOT_FOUND"
+  | "RENDER_FAILED"
+  | "FETCH_FAILED"
+  | "ORIGIN_FORBIDDEN";
 
-export interface ResolvedSnapshot {
+interface ResolvedSnapshot {
   source: SnapshotSource;
   snapshot: SnapshotModule.Snapshot;
 }
 
-export interface StatusResponse {
+interface StatusResponse {
   source: SnapshotSource;
   fetchedAt: string;
   files: string[];
 }
 
-export interface RefreshResponse {
+interface RefreshResponse {
   fetchedAt: string;
 }
 
-export interface ErrorResponse {
+interface ErrorResponse {
   error: {
-    code: StatsErrorCode;
+    code: PreviewErrorCode;
     message: string;
   };
 }
@@ -113,7 +116,7 @@ function sendJson(
 function sendError(
   res: ServerResponse,
   status: number,
-  code: StatsErrorCode,
+  code: PreviewErrorCode,
   message: string,
 ): void {
   sendJson(res, status, { error: { code, message } });
@@ -130,38 +133,20 @@ export function previewPlugin(env: Record<string, string>): Plugin {
   return {
     name: "stats-preview",
     configureServer(server) {
-      async function loadRender() {
-        return RenderModuleSchema.parse(
-          await server.ssrLoadModule(resolve(srcDir, "render/index.ts")),
-        );
+      async function load<T>(path: string, schema: z.ZodType<T>) {
+        return schema.parse(await server.ssrLoadModule(resolve(srcDir, path)));
       }
 
-      async function loadConfigModule() {
-        return ConfigModuleSchema.parse(
-          await server.ssrLoadModule(resolve(srcDir, "config/load.ts")),
-        );
-      }
-
-      async function loadFetch() {
-        return FetchModuleSchema.parse(
-          await server.ssrLoadModule(resolve(srcDir, "fetch/index.ts")),
-        );
-      }
+      const loadRender = () => load("render/index.ts", RenderModuleSchema);
+      const loadConfigModule = () => load("config/load.ts", ConfigModuleSchema);
+      const loadFetch = () => load("fetch/index.ts", FetchModuleSchema);
 
       async function loadSnapshotModule() {
-        const module = SnapshotModuleSchema.parse(
-          await server.ssrLoadModule(resolve(srcDir, "fetch/snapshot.ts")),
-        );
+        const module = await load("fetch/snapshot.ts", SnapshotModuleSchema);
         return {
           ...module,
           cachePath: resolve(projectRoot, module.SNAPSHOT_PATH),
         };
-      }
-
-      async function loadEnvModule() {
-        return EnvModuleSchema.parse(
-          await server.ssrLoadModule(resolve(srcDir, "cli/env.ts")),
-        );
       }
 
       async function renderFiles(): Promise<{
@@ -240,13 +225,6 @@ export function previewPlugin(env: Record<string, string>): Plugin {
       }
 
       async function handleRefresh(res: ServerResponse): Promise<void> {
-        let requireToken: typeof EnvModule.requireToken;
-        try {
-          ({ requireToken } = await loadEnvModule());
-        } catch (error) {
-          sendError(res, 500, "FETCH_FAILED", describeError(error));
-          return;
-        }
         let token: string;
         try {
           token = requireToken(env);
@@ -315,10 +293,7 @@ export function previewPlugin(env: Record<string, string>): Plugin {
         if ((env.GH_TOKEN?.trim() ?? "") === "") {
           return;
         }
-        const [{ cachePath }, { requireToken }] = await Promise.all([
-          loadSnapshotModule(),
-          loadEnvModule(),
-        ]);
+        const { cachePath } = await loadSnapshotModule();
         if (existsSync(cachePath)) {
           return;
         }

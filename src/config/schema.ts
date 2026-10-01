@@ -24,7 +24,7 @@ export const RepoNameSchema = z
   .string()
   .regex(/^[a-zA-Z0-9-]{1,39}\/[\w.-]+$/, "must match owner/name");
 
-export const ThemeSchema = z.object({
+const ThemeSchema = z.object({
   title: hexColor,
   icon: hexColor,
   text: hexColor,
@@ -33,7 +33,7 @@ export const ThemeSchema = z.object({
   background: hexColor,
 });
 
-export const StatsCardOptionsSchema = z
+const StatsCardOptionsSchema = z
   .object({
     enabled: z.boolean().default(true),
     width: width.default(437),
@@ -53,7 +53,7 @@ export const StatsCardOptionsSchema = z
     },
   );
 
-export const TopLangsCardOptionsSchema = z.object({
+const TopLangsCardOptionsSchema = z.object({
   enabled: z.boolean().default(true),
   width: width.default(320),
   height: minHeight,
