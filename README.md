@@ -196,3 +196,7 @@ Other commands:
 - Every repository of an organization in `orgs` or `STATS_ORGS` that your token can read counts for stars and languages, even ones you never touched. Forks are left out of languages but count for stars. Use `excludeRepos` to drop repositories.
 - When the token expires, runs fail with `error[TOKEN_UNAUTHORIZED]` and the cards stop updating. Create a new token and update `STATS_TOKEN`.
 - Text width is not measured exactly. Very long display names or language names can overflow the card.
+
+## License
+
+[MIT](LICENSE)

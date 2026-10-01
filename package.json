@@ -2,6 +2,7 @@
   "name": "simple-github-readme-stats",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Self-hosted GitHub stats cards rendered as SVG and published to a Gist",
   "type": "module",
   "packageManager": "pnpm@12.8.1",
