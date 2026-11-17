@@ -72,12 +72,13 @@ Ask the user:
   ```
 
 - Any repos to leave out? Same choice: `excludeRepos` in the config (public) or the `STATS_EXCLUDE_REPOS` secret as comma-separated `owner/name` entries (private).
+- Only a few repos of an organization should count? Leave the organization out and list those repos instead: `includeRepos` in the config (public) or the `STATS_INCLUDE_REPOS` secret as comma-separated `owner/name` entries (private).
 
 Config values and secrets are merged, so both can be used.
 
 ## 6. Edit the config
 
-Edit `stats.config.ts`. Set `username` to `<user>`, `gist.id` to `<gistId>`, and `orgs`/`excludeRepos` from step 5 (or `[]`). Leave the other options alone unless the user asks. The fields are described in `README.md` under Configuration.
+Edit `stats.config.ts`. Set `username` to `<user>`, `gist.id` to `<gistId>`, and `orgs`/`excludeRepos`/`includeRepos` from step 5 (or `[]`). Leave the other options alone unless the user asks. The fields are described in `README.md` under Configuration.
 
 ```sh
 git add stats.config.ts

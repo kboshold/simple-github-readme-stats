@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { fetchRepos } from "../../src/fetch/queries/repos.ts";
-import { fakeClient } from "../helpers.ts";
+import { fetchRepo, fetchRepos } from "../../src/fetch/queries/repos.ts";
+import { captureError, fakeClient } from "../helpers.ts";
 
 function page(nodes: unknown[], endCursor: string | null) {
   return {
@@ -76,5 +76,42 @@ describe("fetchRepos", () => {
       code: "API_ERROR",
     });
     expect(calls).toHaveLength(20);
+  });
+});
+
+describe("fetchRepo", () => {
+  it("queries by owner and name and maps the node", async () => {
+    const { client, calls } = fakeClient(() => ({
+      repository: {
+        ...repo("tool.kit"),
+        nameWithOwner: "Acme/tool.kit",
+        owner: { login: "Acme" },
+      },
+    }));
+
+    const node = await fetchRepo(client, "acme/tool.kit");
+
+    expect(node).toEqual({
+      nameWithOwner: "Acme/tool.kit",
+      ownerLogin: "Acme",
+      isFork: false,
+      stars: 3,
+      languages: [{ name: "TypeScript", color: "#3178c6", size: 120 }],
+    });
+    expect(calls.map((call) => call.variables)).toEqual([
+      { owner: "acme", name: "tool.kit" },
+    ]);
+  });
+
+  it.each([
+    ["missing", { repository: null }],
+    ["renamed", { repository: repo("new-name") }],
+  ])("throws REPO_NOT_FOUND without the name when %s", async (_, response) => {
+    const { client } = fakeClient(() => response);
+
+    const error = await captureError(fetchRepo(client, "octocat/old-name"));
+
+    expect(error.code).toBe("REPO_NOT_FOUND");
+    expect(error.message).not.toContain("old-name");
   });
 });

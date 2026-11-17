@@ -54,6 +54,14 @@ export function networkError(message: string): StatsError {
   return new StatsError("API_ERROR", `Network error: ${message}`);
 }
 
+// The repository name stays out of the message; it can be a secret.
+export function includedRepoNotFound(): StatsError {
+  return new StatsError(
+    "REPO_NOT_FOUND",
+    "A repository from includeRepos or STATS_INCLUDE_REPOS was not found, was renamed, or is not readable with GH_TOKEN",
+  );
+}
+
 export function unknownFailure(error: unknown): Failure {
   const message = error instanceof Error ? error.message : String(error);
   return fatal(new StatsError("API_ERROR", message));
@@ -77,6 +85,13 @@ function classifyGraphqlError(error: GraphqlResponseError<unknown>): Failure {
     )
   ) {
     return fatal(new StatsError("USER_NOT_FOUND", "GitHub user not found"));
+  }
+  if (
+    errors.some(
+      (entry) => entry.type === "NOT_FOUND" && entry.path?.[0] === "repository",
+    )
+  ) {
+    return fatal(includedRepoNotFound());
   }
   if (errors.some((entry) => entry.type === "RATE_LIMITED")) {
     return fatal(

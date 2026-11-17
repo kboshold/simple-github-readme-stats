@@ -3,7 +3,12 @@ import { aggregateRepos, estimateCommits } from "../../src/fetch/aggregate.ts";
 import type { CommitInputs } from "../../src/fetch/queries/commits.ts";
 import type { RepoNode } from "../../src/fetch/queries/repos.ts";
 
-const filter = { username: "octocat", orgs: [], excludeRepos: [] };
+const filter = {
+  username: "octocat",
+  orgs: [],
+  excludeRepos: [],
+  includeRepos: [],
+};
 
 function repo(
   nameWithOwner: string,
@@ -56,6 +61,32 @@ describe("aggregateRepos", () => {
     );
 
     expect(totals.stars).toBe(15);
+  });
+
+  it("counts included repositories of other owners case-insensitively", () => {
+    const totals = aggregateRepos(
+      [
+        repo("octocat/a", { stars: 5 }),
+        repo("Globex/Tool", { stars: 10 }),
+        repo("globex/other", { stars: 100 }),
+      ],
+      { ...filter, includeRepos: ["globex/tool"] },
+    );
+
+    expect(totals.stars).toBe(15);
+  });
+
+  it("lets excludeRepos win over includeRepos", () => {
+    const totals = aggregateRepos(
+      [repo("octocat/a", { stars: 5 }), repo("globex/tool", { stars: 10 })],
+      {
+        ...filter,
+        includeRepos: ["globex/tool"],
+        excludeRepos: ["Globex/Tool"],
+      },
+    );
+
+    expect(totals.stars).toBe(5);
   });
 
   it("drops excluded repositories case-insensitively", () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { resolveConfig } from "../../src/config/load.ts";
 import { fetchSnapshot } from "../../src/fetch/index.ts";
 import { snapshotSchema } from "../../src/fetch/snapshot.ts";
@@ -7,7 +8,8 @@ const config = resolveConfig(
   {
     username: "octocat",
     orgs: ["acme"],
-    excludeRepos: ["octocat/hidden-project"],
+    excludeRepos: ["octocat/hidden-project", "globex/dropped"],
+    includeRepos: ["Stranger/Popular", "globex/tool", "globex/dropped"],
     gist: { id: "0123456789abcdef0123456789abcdef" },
   },
   {},
@@ -67,10 +69,19 @@ const responses: Record<string, unknown> = {
       },
     },
   },
+
+  Repo: { repository: repo("globex/tool", 30) },
 };
 
+const RequestSchema = z.object({ variables: z.unknown() });
+const repoQueries: unknown[] = [];
+
 const fakeFetch: typeof fetch = async (_input, init) => {
-  const operation = /query (\w+)/.exec(String(init?.body))?.[1] ?? "";
+  const body = String(init?.body);
+  const operation = /query (\w+)/.exec(body)?.[1] ?? "";
+  if (operation === "Repo") {
+    repoQueries.push(RequestSchema.parse(JSON.parse(body)).variables);
+  }
   return new Response(JSON.stringify({ data: responses[operation] }), {
     status: 200,
     headers: { "content-type": "application/json" },
@@ -89,18 +100,28 @@ describe("fetchSnapshot", () => {
       fetchedAt: "2026-09-30T12:00:00.000Z",
       user: { login: "octocat", name: "The Octocat", followers: 22 },
       totals: {
-        stars: 18,
+        stars: 18 + 9000 + 30,
         commits: 300 + (80 - 10 - 2),
         prs: 40,
         issues: 10,
         reviews: 3,
         contributedTo: 5,
       },
-      languages: [{ name: "TypeScript", color: "3178c6", bytes: 200 }],
+      languages: [{ name: "TypeScript", color: "3178c6", bytes: 400 }],
     });
 
+    // Listed and excluded entries need no extra query.
+    expect(repoQueries).toEqual([{ owner: "globex", name: "tool" }]);
+
     const serialized = JSON.stringify(snapshot).toLowerCase();
-    for (const name of ["site", "hidden-project", "secret-service", "acme"]) {
+    for (const name of [
+      "site",
+      "hidden-project",
+      "secret-service",
+      "acme",
+      "globex",
+      "popular",
+    ]) {
       expect(serialized).not.toContain(name);
     }
   });

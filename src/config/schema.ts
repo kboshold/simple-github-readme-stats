@@ -71,6 +71,7 @@ export const ConfigSchema = z.object({
   username: LoginSchema,
   orgs: z.array(LoginSchema).default([]),
   excludeRepos: z.array(RepoNameSchema).default([]),
+  includeRepos: z.array(RepoNameSchema).default([]),
   commitsWindow: z.enum(["all", "year"]).default("all"),
   gist: z.object({
     id: z
