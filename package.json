@@ -22,7 +22,7 @@
   "dependencies": {
     "@octokit/graphql": "^9.0.5",
     "@octokit/request": "^10.0.16",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
