@@ -127,6 +127,27 @@ describe("createClient", () => {
     expect(error.code).toBe("USER_NOT_FOUND");
   });
 
+  it("maps NOT_FOUND on repository to REPO_NOT_FOUND without the name", async () => {
+    const { client } = setup([
+      () =>
+        json(200, {
+          data: { repository: null },
+          errors: [
+            {
+              type: "NOT_FOUND",
+              path: ["repository"],
+              message: "Could not resolve to a Repository 'acme/secret-tool'",
+            },
+          ],
+        }),
+    ]);
+
+    const error = await captureError(client.query("query", {}, schema));
+
+    expect(error.code).toBe("REPO_NOT_FOUND");
+    expect(error.message).not.toContain("secret-tool");
+  });
+
   it.each([
     [
       "GraphQL",

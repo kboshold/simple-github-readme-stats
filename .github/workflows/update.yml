@@ -34,6 +34,7 @@ jobs:
           GH_TOKEN: ${{ secrets.STATS_TOKEN }}
           STATS_ORGS: ${{ secrets.STATS_ORGS }}
           STATS_EXCLUDE_REPOS: ${{ secrets.STATS_EXCLUDE_REPOS }}
+          STATS_INCLUDE_REPOS: ${{ secrets.STATS_INCLUDE_REPOS }}
       - name: Render cards
         run: pnpm svg:render
       - name: Push to Gist

@@ -3,7 +3,10 @@ import type { CommitInputs } from "./queries/commits.ts";
 import type { RepoNode } from "./queries/repos.ts";
 import type { LanguageStat } from "./snapshot.ts";
 
-export type RepoFilter = Pick<Config, "username" | "orgs" | "excludeRepos">;
+export type RepoFilter = Pick<
+  Config,
+  "username" | "orgs" | "excludeRepos" | "includeRepos"
+>;
 
 export interface RepoTotals {
   stars: number;
@@ -28,12 +31,15 @@ function countedRepos(repos: RepoNode[], filter: RepoFilter): RepoNode[] {
   const excluded = new Set(
     filter.excludeRepos.map((name) => name.toLowerCase()),
   );
+  const included = new Set(
+    filter.includeRepos.map((name) => name.toLowerCase()),
+  );
   const seen = new Set<string>();
 
   return repos.filter((repo) => {
     const key = repo.nameWithOwner.toLowerCase();
     if (
-      !owners.has(repo.ownerLogin.toLowerCase()) ||
+      (!owners.has(repo.ownerLogin.toLowerCase()) && !included.has(key)) ||
       excluded.has(key) ||
       seen.has(key)
     ) {

@@ -5,6 +5,7 @@ export type StatsErrorCode =
   | "TOKEN_MISSING"
   | "TOKEN_UNAUTHORIZED"
   | "USER_NOT_FOUND"
+  | "REPO_NOT_FOUND"
   | "RATE_LIMITED"
   | "API_ERROR"
   | "RESPONSE_INVALID"

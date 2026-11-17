@@ -12,6 +12,7 @@ type Env = Record<string, string | undefined>;
 const EnvListsSchema = z.object({
   STATS_ORGS: z.array(LoginSchema),
   STATS_EXCLUDE_REPOS: z.array(RepoNameSchema),
+  STATS_INCLUDE_REPOS: z.array(RepoNameSchema),
 });
 
 function splitList(value: string | undefined): string[] {
@@ -45,6 +46,7 @@ export function resolveConfig(input: unknown, env: Env): Config {
   const lists = EnvListsSchema.safeParse({
     STATS_ORGS: splitList(env.STATS_ORGS),
     STATS_EXCLUDE_REPOS: splitList(env.STATS_EXCLUDE_REPOS),
+    STATS_INCLUDE_REPOS: splitList(env.STATS_INCLUDE_REPOS),
   });
 
   if (!config.success || !lists.success) {
@@ -61,6 +63,10 @@ export function resolveConfig(input: unknown, env: Env): Config {
     excludeRepos: mergeUnique(
       config.data.excludeRepos,
       lists.data.STATS_EXCLUDE_REPOS,
+    ),
+    includeRepos: mergeUnique(
+      config.data.includeRepos,
+      lists.data.STATS_INCLUDE_REPOS,
     ),
   };
 }

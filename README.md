@@ -29,7 +29,7 @@ The agent forks the repo, creates the Gist, edits the config, runs the workflow 
 1. Fork this repository.
 2. Create a secret Gist at <https://gist.github.com> with any placeholder file (a Gist can't be empty). The Gist ID is the hex string at the end of its URL.
 3. Create a personal access token (classic) with the scopes `read:user`, `repo`, `read:org` and `gist`: <https://github.com/settings/tokens/new?scopes=read:user,repo,read:org,gist&description=readme-stats>. If an organization you want counted uses SAML SSO, authorize the token for it under "Configure SSO".
-4. In the fork, add the token as the Actions secret `STATS_TOKEN` (Settings > Secrets and variables > Actions). `STATS_ORGS` and `STATS_EXCLUDE_REPOS` are optional, see [Privacy](#privacy).
+4. In the fork, add the token as the Actions secret `STATS_TOKEN` (Settings > Secrets and variables > Actions). `STATS_ORGS`, `STATS_EXCLUDE_REPOS` and `STATS_INCLUDE_REPOS` are optional, see [Privacy](#privacy).
 5. In `stats.config.ts`, set `username` and `gist.id`. See [Configuration](#configuration) for the rest.
 6. In the Actions tab, enable workflows, then run "Update stats". When it is green, the four SVGs are in the Gist and you can delete the placeholder file.
 7. Add the [embed snippet](#embed) to your profile README.
@@ -69,6 +69,7 @@ Invalid values stop every command with `error[CONFIG_INVALID]` and a list of the
 | `username` | string | required | GitHub login the cards are made for |
 | `orgs` | string[] | `[]` | Organization logins whose repositories count for stars and languages. Merged with `STATS_ORGS` |
 | `excludeRepos` | string[] | `[]` | `owner/name` entries left out of stars and languages. Merged with `STATS_EXCLUDE_REPOS` |
+| `includeRepos` | string[] | `[]` | `owner/name` entries that count for stars and languages even though their owner is not in `orgs`. Merged with `STATS_INCLUDE_REPOS`. `excludeRepos` wins |
 | `commitsWindow` | `"all"` or `"year"` | `"all"` | Count commits over the whole account lifetime or the last 365 days |
 | `gist.id` | string | required | ID of the target Gist, 20 to 32 hex characters |
 | `themes` | record of `Theme` | `{ dark: mocha, light: latte }` | One SVG set per entry. The key is the file name suffix and must match `^[a-z0-9-]+$` |
@@ -185,7 +186,7 @@ Other commands:
 ## Privacy
 
 - Repository and organization names are never written to `.cache/data.json`, `dist/`, the logs or the Gist. Only totals and language sums are stored.
-- `orgs` and `excludeRepos` in `stats.config.ts` are public in your fork. Organization logins you don't want to show go into the `STATS_ORGS` secret instead, as a comma-separated list. Private repositories to leave out go into `STATS_EXCLUDE_REPOS` as comma-separated `owner/name` entries. Both are merged with the config values. Locally, put them in `.env`.
+- `orgs`, `excludeRepos` and `includeRepos` in `stats.config.ts` are public in your fork. Organization logins you don't want to show go into the `STATS_ORGS` secret instead, as a comma-separated list. Private repositories to leave out go into `STATS_EXCLUDE_REPOS` and single repositories to add go into `STATS_INCLUDE_REPOS`, both as comma-separated `owner/name` entries. All three are merged with the config values. Locally, put them in `.env`.
 - The totals still show roughly how much private work you do. That is on purpose. Check that you are fine with it before you publish the cards.
 - The workflow has no `pull_request` trigger, so code from other people's pull requests never runs with your token.
 
@@ -193,7 +194,8 @@ Other commands:
 
 - The commit total is an estimate. GitHub doesn't report private commits on their own; they are mixed with private pull requests, issues and reviews. The tool subtracts what it can identify, so the result depends on what the token can see. A classic token with organization access sees more private commits directly and gets closer to the real number.
 - Cards can be up to about three hours old, plus up to 5 minutes of caching on the Gist raw host. GitHub may also start scheduled runs several minutes late.
-- Every repository of an organization in `orgs` or `STATS_ORGS` that your token can read counts for stars and languages, even ones you never touched. Forks are left out of languages but count for stars. Use `excludeRepos` to drop repositories.
+- Every repository of an organization in `orgs` or `STATS_ORGS` that your token can read counts for stars and languages, even ones you never touched. Forks are left out of languages but count for stars. Use `excludeRepos` to drop repositories, or leave the organization out of `orgs` and list single repositories in `includeRepos`.
+- `includeRepos` only changes stars and languages, not the commit total. Each entry must be readable with the token. If one is missing or was renamed, runs fail with `error[REPO_NOT_FOUND]`; the message does not name the repository.
 - When the token expires, runs fail with `error[TOKEN_UNAUTHORIZED]` and the cards stop updating. Create a new token and update `STATS_TOKEN`.
 - Text width is not measured exactly. Very long display names or language names can overflow the card.
 

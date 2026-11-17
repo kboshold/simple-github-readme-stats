@@ -2,12 +2,21 @@ import type { Config } from "../config/schema.ts";
 import { aggregateRepos, estimateCommits } from "./aggregate.ts";
 import { type ClientOptions, createClient } from "./client.ts";
 import { fetchCommitInputs } from "./queries/commits.ts";
-import { fetchRepos } from "./queries/repos.ts";
+import { fetchRepo, fetchRepos, type RepoNode } from "./queries/repos.ts";
 import { fetchUser } from "./queries/user.ts";
 import { SNAPSHOT_SCHEMA_VERSION, type Snapshot } from "./snapshot.ts";
 
 export interface FetchSnapshotOptions extends ClientOptions {
   now?: Date;
+}
+
+function unlistedIncludes(listed: RepoNode[], config: Config): string[] {
+  const known = new Set(
+    [...listed.map((repo) => repo.nameWithOwner), ...config.excludeRepos].map(
+      (name) => name.toLowerCase(),
+    ),
+  );
+  return config.includeRepos.filter((name) => !known.has(name.toLowerCase()));
 }
 
 export async function fetchSnapshot(
@@ -19,7 +28,7 @@ export async function fetchSnapshot(
   const client = createClient(token, options);
 
   const user = await fetchUser(client, config.username);
-  const [commitInputs, repos] = await Promise.all([
+  const [commitInputs, listed] = await Promise.all([
     fetchCommitInputs(client, config.username, {
       window: config.commitsWindow,
       createdAt: user.createdAt,
@@ -27,7 +36,10 @@ export async function fetchSnapshot(
     }),
     fetchRepos(client, config.username),
   ]);
-  const { stars, languages } = aggregateRepos(repos, config);
+  const included = await Promise.all(
+    unlistedIncludes(listed, config).map((name) => fetchRepo(client, name)),
+  );
+  const { stars, languages } = aggregateRepos([...listed, ...included], config);
 
   return {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,

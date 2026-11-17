@@ -93,10 +93,12 @@ describe("resolveConfig", () => {
         ...minimal,
         orgs: ["Acme"],
         excludeRepos: ["octocat/secret"],
+        includeRepos: ["globex/tool"],
       },
       {
         STATS_ORGS: "acme, globex ,,initech",
         STATS_EXCLUDE_REPOS: "Octocat/Secret,acme/internal.tool",
+        STATS_INCLUDE_REPOS: "Globex/Tool, initech/app",
       },
     );
 
@@ -105,6 +107,7 @@ describe("resolveConfig", () => {
       "octocat/secret",
       "acme/internal.tool",
     ]);
+    expect(config.includeRepos).toEqual(["globex/tool", "initech/app"]);
   });
 
   it("adds nothing for empty or unset env lists", () => {
@@ -118,6 +121,7 @@ describe("resolveConfig", () => {
       const config = resolveConfig(base, env);
       expect(config.orgs).toEqual(["acme"]);
       expect(config.excludeRepos).toEqual([]);
+      expect(config.includeRepos).toEqual([]);
     }
   });
 
@@ -126,13 +130,16 @@ describe("resolveConfig", () => {
       resolveConfig(minimal, {
         STATS_ORGS: "bad org",
         STATS_EXCLUDE_REPOS: "private-repo-name",
+        STATS_INCLUDE_REPOS: "other-private-name",
       }),
     );
 
     expect(error.code).toBe("CONFIG_INVALID");
     expect(error.message).toContain("STATS_ORGS.0");
     expect(error.message).toContain("STATS_EXCLUDE_REPOS.0");
+    expect(error.message).toContain("STATS_INCLUDE_REPOS.0");
     expect(error.message).not.toContain("private-repo-name");
+    expect(error.message).not.toContain("other-private-name");
   });
 });
 

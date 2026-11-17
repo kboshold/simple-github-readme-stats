@@ -1,9 +1,28 @@
 import { z } from "zod";
 import { StatsError } from "../../errors.ts";
-import type { GraphQLClient } from "../client.ts";
+import { type GraphQLClient, includedRepoNotFound } from "../client.ts";
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 20;
+
+const REPO_FIELDS = `
+  nameWithOwner
+  isFork
+  owner { login }
+  stargazers { totalCount }
+  languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
+    edges {
+      size
+      node { name color }
+    }
+  }
+`;
+
+const REPO_QUERY = `
+  query Repo($owner: String!, $name: String!) {
+    repository(owner: $owner, name: $name) { ${REPO_FIELDS} }
+  }
+`;
 
 const REPOS_QUERY = `
   query Repos($login: String!, $after: String) {
@@ -13,18 +32,7 @@ const REPOS_QUERY = `
         after: $after
         ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR]
       ) {
-        nodes {
-          nameWithOwner
-          isFork
-          owner { login }
-          stargazers { totalCount }
-          languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
-            edges {
-              size
-              node { name color }
-            }
-          }
-        }
+        nodes { ${REPO_FIELDS} }
         pageInfo { hasNextPage endCursor }
       }
     }
@@ -64,6 +72,8 @@ const ReposResponseSchema = z.object({
   }),
 });
 
+const RepoResponseSchema = z.object({ repository: RepoSchema.nullable() });
+
 type ReposResponse = z.infer<typeof ReposResponseSchema>;
 
 export interface RepoLanguage {
@@ -78,6 +88,41 @@ export interface RepoNode {
   isFork: boolean;
   stars: number;
   languages: RepoLanguage[];
+}
+
+function toRepoNode(node: z.infer<typeof RepoSchema>): RepoNode {
+  return {
+    nameWithOwner: node.nameWithOwner,
+    ownerLogin: node.owner.login,
+    isFork: node.isFork,
+    stars: node.stargazers.totalCount,
+    languages: (node.languages?.edges ?? []).map((edge) => ({
+      name: edge.node.name,
+      color: edge.node.color,
+      size: edge.size,
+    })),
+  };
+}
+
+export async function fetchRepo(
+  client: GraphQLClient,
+  nameWithOwner: string,
+): Promise<RepoNode> {
+  const [owner = "", name = ""] = nameWithOwner.split("/");
+  const { repository } = await client.query(
+    REPO_QUERY,
+    { owner, name },
+    RepoResponseSchema,
+  );
+
+  // GitHub follows renames, so a different name means the entry is stale.
+  if (
+    repository === null ||
+    repository.nameWithOwner.toLowerCase() !== nameWithOwner.toLowerCase()
+  ) {
+    throw includedRepoNotFound();
+  }
+  return toRepoNode(repository);
 }
 
 export async function fetchRepos(
@@ -95,19 +140,7 @@ export async function fetchRepos(
     );
     const { nodes, pageInfo } = response.user.repositories;
 
-    for (const node of nodes) {
-      repos.push({
-        nameWithOwner: node.nameWithOwner,
-        ownerLogin: node.owner.login,
-        isFork: node.isFork,
-        stars: node.stargazers.totalCount,
-        languages: (node.languages?.edges ?? []).map((edge) => ({
-          name: edge.node.name,
-          color: edge.node.color,
-          size: edge.size,
-        })),
-      });
-    }
+    repos.push(...nodes.map(toRepoNode));
 
     if (!pageInfo.hasNextPage || pageInfo.endCursor === null) {
       return repos;
